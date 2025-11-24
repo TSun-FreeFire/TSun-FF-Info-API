@@ -47,14 +47,14 @@ async def json_to_proto(json_data: str, proto_message: Message) -> bytes:
 
 def get_account_credentials(region: str) -> str:
     r = region.upper()
-    if r == "PK":
-        return "uid=4017149174&password=754NCUB3ZYJNAX1OI24BR9BGHFS5L1046841MFDDQ9CMME9N1Q846R2X27KN49NH"
+    if r in {"NA", "EU", "ID", "TH", "VN", "SG", "PK", "MY", "PH", "RU", "AFR"}:
+        return "uid=4151822318&password=XG5REDGWOTSC9YNO1EJBXSUU3OSN5IDALZ8VW81BP15PVAZVSXX3GNXJOY8Q6SLN"
     elif r == "BD":
         return "uid=4260559999&password=saeedxmotoxkaka_3PJ4Z1XNC3Q"
     elif r in {"BR", "US", "SAC", "ME"}:
         return "uid=4260531157&password=saeedxmotoxkaka_J7FAA5VUJ1H"
     else:
-        return "uid=4288511979&password=I_6ZSU8_BY_SPIDEERIO_GAMING_K2BWU"
+        return "uid=4213341828&password=WIND-0GAT2HKEN-X"
 
 # === Token Generation ===
 async def get_access_token(account: str):
@@ -72,7 +72,7 @@ async def create_jwt(region: str):
     body = json.dumps({"open_id": open_id, "open_id_type": "4", "login_token": token_val, "orign_platform_type": "4"})
     proto_bytes = await json_to_proto(body, FreeFire_pb2.LoginReq())
     payload = aes_cbc_encrypt(MAIN_KEY, MAIN_IV, proto_bytes)
-    url = "https://loginbp.ggblueshark.com/MajorLogin"
+    url = "https://loginbp.ggpolarbear.com/MajorLogin"
     headers = {
         'User-Agent': USERAGENT, 'Connection': "Keep-Alive", 'Accept-Encoding': "gzip",
         'Content-Type': "application/octet-stream", 'Expect': "100-continue",
