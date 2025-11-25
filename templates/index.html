@@ -1,0 +1,1430 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=0.75, maximum-scale=1.0, user-scalable=yes">
+    <title>🔥 TSun - Free Fire Info & Api Doc</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@300;400;700&display=swap" rel="stylesheet">
+    <style>
+        @font-face {
+            font-family: 'Segoe UI';
+            src: local('Segoe UI'), url('https://fonts.gstatic.com/s/segoeui/v12/469_ULH05siIfLwG-CXz9x7kQKw.woff2') format('woff2');
+            font-weight: 300 700;
+            font-display: swap;
+        }
+    </style>
+        <style>
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body {
+                background: #F9F6F5;
+                color: #322923;
+                min-height: 100vh;
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                overflow-x: hidden;
+                position: relative;
+            }
+
+            .video-background {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+                z-index: -2;
+                opacity: 0.3;
+                filter: brightness(0.8) sepia(0.3) saturate(1.5) hue-rotate(-20deg);
+            }
+            .overlay {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(249, 246, 245, 0.7);
+                z-index: -1;
+            }
+            .container {
+                max-width: 1200px;
+                margin: 0 auto;
+                padding: 20px;
+                position: relative;
+                z-index: 1;
+            }
+            .welcome-screen {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: linear-gradient(135deg, #F9F6F5, #B38763, #9F624E);
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                z-index: 1000;
+                transition: opacity 0.8s ease;
+            }
+            .welcome-content {
+                text-align: center;
+                animation: fadeInUp 1s ease;
+            }
+            .welcome-title {
+                font-size: 5rem;
+                font-weight: bold;
+                background: linear-gradient(45deg, #9F624E, #B38763, #74847C);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                background-clip: text;
+                text-shadow: 0 0 25px rgba(159, 98, 78, 0.6);
+                margin-bottom: 20px;
+                animation: glow 2s ease-in-out infinite alternate;
+            }
+            @keyframes glow {
+                from { text-shadow: 0 0 10px rgba(159, 98, 78, 0.4); }
+                to { text-shadow: 0 0 20px rgba(179, 135, 99, 0.7), 0 0 30px rgba(179, 135, 99, 0.6); }
+            }
+            .welcome-subtitle {
+                color: #9A9692;
+                font-size: 1.5rem;
+                margin-bottom: 40px;
+                font-weight: 300;
+            }
+            .start-btn {
+                background: linear-gradient(135deg, #9F624E, #B38763);
+                color: #F9F6F5;
+                border: none;
+                padding: 20px 60px;
+                font-size: 1.3rem;
+                font-weight: bold;
+                border-radius: 50px;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                position: relative;
+                overflow: hidden;
+                box-shadow: 0 10px 30px rgba(179, 135, 99, 0.3);
+            }
+            .start-btn:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 15px 40px rgba(179, 135, 99, 0.5);
+                background: linear-gradient(135deg, #B38763, #74847C);
+            }
+            .start-btn::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: -100%;
+                width: 100%;
+                height: 100%;
+                background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+                transition: 0.5s;
+            }
+            .start-btn:hover::before {
+                left: 100%;
+            }
+            .main-content {
+                display: none;
+                opacity: 0;
+                transition: opacity 0.5s ease;
+            }
+            .header {
+                text-align: center;
+                padding: 50px 0;
+                background: rgba(159, 98, 78, 0.15);
+                border-radius: 20px;
+                margin-bottom: 30px;
+                border: 1px solid rgba(159, 98, 78, 0.3);
+                backdrop-filter: blur(10px);
+                position: relative;
+                overflow: hidden;
+            }
+            .header::before {
+                content: '';
+                position: absolute;
+                top: -50%;
+                left: -50%;
+                width: 200%;
+                height: 200%;
+                background: radial-gradient(circle, rgba(159,98,78,0.1) 0%, transparent 70%);
+                animation: pulse 4s ease-in-out infinite;
+            }
+            @keyframes pulse {
+                0%, 100% { transform: scale(1); opacity: 0.5; }
+                50% { transform: scale(1.1); opacity: 0.8; }
+            }
+            .brand {
+                font-size: 4rem;
+                font-weight: bold;
+                background: linear-gradient(45deg, #9F624E, #B38763, #74847C);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                background-clip: text;
+                text-shadow: 0 0 20px rgba(159, 98, 78, 0.5);
+                margin-bottom: 10px;
+                position: relative;
+            }
+            .tagline {
+                color: #9A9692;
+                font-size: 1.3rem;
+                margin-bottom: 20px;
+                font-weight: 300;
+            }
+            .tab-container {
+                display: flex;
+                justify-content: center;
+                margin-bottom: 30px;
+                gap: 20px;
+            }
+            .tab-btn {
+                background: rgba(50, 41, 35, 0.1);
+                border: none;
+                color: #322923;
+                padding: 15px 30px;
+                border-radius: 50px;
+                cursor: pointer;
+                font-size: 1.1rem;
+                font-weight: bold;
+                transition: all 0.3s ease;
+                border: 2px solid transparent;
+            }
+            .tab-btn.active {
+                background: linear-gradient(135deg, #9F624E, #B38763);
+                border-color: #9F624E;
+                box-shadow: 0 5px 20px rgba(179, 135, 99, 0.3);
+            }
+            .tab-btn:hover:not(.active) {
+                background: rgba(179, 135, 99, 0.15);
+                border-color: rgba(179, 135, 99, 0.3);
+            }
+            .tab-content {
+                display: none;
+            }
+            .tab-content.active {
+                display: block;
+                animation: fadeIn 0.5s ease;
+            }
+            @keyframes fadeIn {
+                from { opacity: 0; transform: translateY(20px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+            @keyframes fadeInUp {
+                from { opacity: 0; transform: translateY(30px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+            .search-box {
+                background: rgba(50, 41, 35, 0.1);
+                padding: 40px;
+                border-radius: 20px;
+                margin: 30px 0;
+                border: 1px solid rgba(50, 41, 35, 0.3);
+                backdrop-filter: blur(15px);
+                box-shadow: 0 10px 30px rgba(116, 132, 124, 0.3);
+            }
+            .form-group {
+                margin: 25px 0;
+            }
+            .form-input {
+                width: 100%;
+                padding: 18px;
+                border: none;
+                border-radius: 12px;
+                background: rgba(50, 41, 35, 0.15);
+                color: #322923;
+                font-size: 16px;
+                border: 2px solid rgba(116, 132, 124, 0.3);
+                transition: all 0.3s ease;
+            }
+            .form-input:focus {
+                outline: none;
+                border-color: #9F624E;
+                box-shadow: 0 0 20px rgba(159, 98, 78, 0.4);
+                background: rgba(50, 41, 35, 0.2);
+                transform: translateY(-2px);
+            }
+            .form-input::placeholder {
+                color: rgba(116, 132, 124, 0.6);
+            }
+            .btn {
+                background: linear-gradient(135deg, #9F624E, #B38763);
+                color: #F9F6F5;
+                padding: 18px 40px;
+                border: none;
+                border-radius: 12px;
+                cursor: pointer;
+                font-size: 18px;
+                font-weight: bold;
+                transition: all 0.3s ease;
+                width: 100%;
+                position: relative;
+                overflow: hidden;
+            }
+            .btn::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: -100%;
+                width: 100%;
+                height: 100%;
+                background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+                transition: 0.5s;
+            }
+            .btn:hover::before {
+                left: 100%;
+            }
+            .btn:hover {
+                background: linear-gradient(135deg, #B38763, #74847C);
+                transform: translateY(-3px);
+                box-shadow: 0 10px 25px rgba(179, 135, 99, 0.4);
+            }
+            .results {
+                display: none;
+                margin-top: 40px;
+            }
+            .card {
+                background: rgba(50, 41, 35, 0.1);
+                border-radius: 20px;
+                padding: 30px;
+                margin: 25px 0;
+                border: 1px solid rgba(116, 132, 124, 0.15);
+                backdrop-filter: blur(15px);
+                box-shadow: 0 10px 30px rgba(116, 132, 124, 0.2);
+                transition: transform 0.3s ease;
+            }
+            .card:hover {
+                transform: translateY(-5px);
+            }
+            .outfit-image {
+                max-width: 100%;
+                border-radius: 15px;
+                margin: 20px 0;
+                border: 3px solid #9F624E;
+                box-shadow: 0 10px 25px rgba(116, 132, 124, 0.3);
+                transition: transform 0.3s ease;
+            }
+            .outfit-image:hover {
+                transform: scale(1.02);
+            }
+            .loading {
+                display: none;
+                text-align: center;
+                margin: 40px 0;
+            }
+            .spinner {
+                border: 4px solid rgba(50, 41, 35, 0.3);
+                border-radius: 50%;
+                border-top: 4px solid #9F624E;
+                width: 60px;
+                height: 60px;
+                animation: spin 1s linear infinite;
+                margin: 0 auto 25px;
+            }
+            @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+            }
+            .error {
+                color: #B38763;
+                background: rgba(179, 135, 99, 0.15);
+                padding: 20px;
+                border-radius: 12px;
+                margin: 15px 0;
+                border: 1px solid rgba(179, 135, 99, 0.3);
+                backdrop-filter: blur(10px);
+            }
+            .success {
+                color: #74847C;
+                background: rgba(116, 132, 124, 0.15);
+                padding: 20px;
+                border-radius: 12px;
+                margin: 15px 0;
+                border: 1px solid rgba(116, 132, 124, 0.3);
+                backdrop-filter: blur(10px);
+            }
+            .info-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+                gap: 20px;
+                margin: 25px 0;
+            }
+            .info-item {
+                background: rgba(50, 41, 35, 0.08);
+                padding: 20px;
+                border-radius: 12px;
+                border-left: 4px solid #9F624E;
+                transition: transform 0.3s ease;
+            }
+            .info-item:hover {
+                transform: translateX(5px);
+            }
+            .info-label {
+                color: #9A9692;
+                font-size: 0.95rem;
+                margin-bottom: 8px;
+                font-weight: 500;
+            }
+            .info-value {
+                color: #322923;
+                font-size: 1.2rem;
+                font-weight: bold;
+            }
+            .region-badge {
+                background: linear-gradient(135deg, #74847C, #322923);
+                color: #F9F6F5;
+                padding: 10px 20px;
+                border-radius: 25px;
+                font-weight: bold;
+                font-size: 1.1rem;
+                display: inline-block;
+                margin-top: 10px;
+                box-shadow: 0 5px 15px rgba(116, 132, 124, 0.3);
+            }
+            .rank-badge {
+                background: linear-gradient(135deg, #B38763, #9F624E);
+                color: #322923;
+                padding: 8px 15px;
+                border-radius: 25px;
+                font-weight: bold;
+                font-size: 0.95rem;
+                display: inline-block;
+                margin-top: 8px;
+                box-shadow: 0 3px 10px rgba(179, 135, 99, 0.3);
+            }
+            .section-title {
+                color: #9F624E;
+                margin: 25px 0 20px 0;
+                font-size: 1.5rem;
+            }
+        </style>
+    </head>
+    <body>
+        <video class="video-background" autoplay muted loop>
+            <source src="https://assets.mixkit.co/videos/preview/mixkit-fire-in-a-dark-background-42817-large.mp4" type="video/mp4">
+        </video>
+        <div class="overlay"></div>
+        <div class="particles" id="particles">
+
+        <!-- Welcome Screen -->
+        <div class="welcome-screen" id="welcomeScreen">
+            <div class="welcome-content">
+                <div class="welcome-title">🔥 TSun Info Api</div>
+                <div class="welcome-subtitle">Free Fire Account Information & Api Doc</div>
+                <button class="start-btn" onclick="startApp()">CLICK TO Enter</button>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="container main-content" id="mainContent">
+            <div class="header floating">
+                <div class="brand">🔥 TSun Info Api</div>
+                <div class="tagline">Free Fire Account Information & Api Doc</div>
+            </div>
+
+            <div class="tab-container">
+                <button class="tab-btn active" onclick="switchTab('fullInfo')">Full Info & Outfit</button>
+                <button class="tab-btn" onclick="switchTab('regionCheck')">Region Check</button>
+                <button class="tab-btn" onclick="switchTab('apiDoc')">Api Doc</button>
+            </div>
+
+            <!-- Full Info & Outfit Tab -->
+            <div class="tab-content active" id="fullInfoTab">
+                <div class="search-box">
+                    <h3 style="text-align: center; margin-bottom: 25px; color: #ff9999; font-size: 1.4rem;">Enter Player UID</h3>
+                    <form id="searchForm">
+                        <div class="form-group">
+                            <input type="text" class="form-input" id="uid" placeholder="Enter Free Fire UID (e.g., 2450675101)" required>
+                        </div>
+                        <button type="submit" class="btn">Get Account Info & Outfit</button>
+                    </form>
+                </div>
+
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <p style="color: #ff9999; font-size: 1.1rem;">Fetching account information and generating outfit...</p>
+                </div>
+
+                <div class="results" id="results">
+                    <div class="card" id="accountInfo">
+                        <h3 style="color: #ff3e3e; text-align: center; margin-bottom: 25px; font-size: 1.8rem;">🎮 ACCOUNT INFORMATION</h3>
+                        <div id="infoContent"></div>
+                    </div>
+
+                    <div class="card" id="outfitDisplay">
+                        <h3 style="color: #ff3e3e; text-align: center; margin-bottom: 25px; font-size: 1.8rem;">👕 CHARACTER OUTFIT</h3>
+                        <div id="outfitContent"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Api Doc Tab -->
+            <div class="tab-content" id="apiDocTab">
+                <div class="loading" id="apiDocLoading">
+                    <div class="spinner"></div>
+                    <p style="color: #ff9999; font-size: 1.1rem;">Loading API Documentation...</p>
+                </div>
+                <div class="results" id="apiDocResults">
+                    <div class="card" id="apiDocContent">
+                        <!-- API Documentation will be loaded here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Region Check Tab -->
+            <div class="tab-content" id="regionCheckTab">
+                <div class="search-box">
+                    <h3 style="text-align: center; margin-bottom: 25px; color: #ff9999; font-size: 1.4rem;">Check Player Region</h3>
+                    <form id="regionForm">
+                        <div class="form-group">
+                            <input type="text" class="form-input" id="regionUid" placeholder="Enter Free Fire UID (e.g., 2450675101)" required>
+                        </div>
+                        <button type="submit" class="btn">Check Region</button>
+                    </form>
+                </div>
+
+                <div class="loading" id="regionLoading">
+                    <div class="spinner"></div>
+                    <p style="color: #ff9999; font-size: 1.1rem;">Checking player region...</p>
+                </div>
+
+                <div class="results" id="regionResults">
+                    <div class="card" id="regionInfo">
+                        <h3 style="color: #ff3e3e; text-align: center; margin-bottom: 25px; font-size: 1.8rem;">🌍 REGION INFORMATION</h3>
+                        <div id="regionContent"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="credit">
+                Powered by TSun Info API <a href="https://t.me/saeedxdie" target="_blank" style="color: #ff9999; text-decoration: none;">Telegram</a> • <a href="https://github.com/TSun-FreeFire" target="_blank" style="color: #ff9999; text-decoration: none;">GitHub</a>
+            </div>
+        </div>
+
+        <script>
+            // Start app function
+            function startApp() {
+                const welcomeScreen = document.getElementById('welcomeScreen');
+                const mainContent = document.getElementById('mainContent');
+
+                welcomeScreen.style.opacity = '0';
+                setTimeout(() => {
+                    welcomeScreen.style.display = 'none';
+                    mainContent.style.display = 'block';
+                    setTimeout(() => {
+                        mainContent.style.opacity = '1';
+                    }, 50);
+                }, 800);
+
+                createParticles();
+            }
+
+            // Tab switching function
+            function switchTab(tabName) {
+                // Hide all tabs
+                document.querySelectorAll('.tab-content').forEach(tab => {
+                    tab.classList.remove('active');
+                });
+
+                // Remove active class from all buttons
+                document.querySelectorAll('.tab-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+
+                // Show selected tab and activate button
+                document.getElementById(tabName + 'Tab').classList.add('active');
+                event.target.classList.add('active');
+
+                // Clear previous results
+                if (tabName === 'fullInfo') {
+                    document.getElementById('results').style.display = 'none';
+                    document.getElementById('infoContent').innerHTML = '';
+                    document.getElementById('outfitContent').innerHTML = '';
+                } else if (tabName === 'regionCheck') {
+                    document.getElementById('regionResults').style.display = 'none';
+                    document.getElementById('regionContent').innerHTML = '';
+                } else if (tabName === 'apiDoc') {
+                    document.getElementById('apiDocResults').style.display = 'none';
+                    document.getElementById('apiDocContent').innerHTML = '';
+                    loadApiDoc();
+                }
+            }
+
+            // Create floating particles (reduced for performance)
+            function createParticles() {
+                const particles = document.getElementById('particles');
+                const particleCount = 10;
+
+                for (let i = 0; i < particleCount; i++) {
+                    const particle = document.createElement('div');
+                    particle.className = 'particle';
+
+                    // Random properties
+                    const size = Math.random() * 5 + 2;
+                    const left = Math.random() * 100;
+                    const animationDuration = Math.random() * 10 + 10;
+                    const animationDelay = Math.random() * 5;
+
+                    particle.style.width = `${size}px`;
+                    particle.style.height = `${size}px`;
+                    particle.style.left = `${left}%`;
+                    particle.style.animationDuration = `${animationDuration}s`;
+                    particle.style.animationDelay = `${animationDelay}s`;
+
+                    particles.appendChild(particle);
+                }
+            }
+
+            // Format timestamp to readable date
+            function formatTimestamp(timestamp) {
+                if (!timestamp) return 'Unknown';
+                const date = new Date(parseInt(timestamp) * 1000);
+                return date.toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            }
+
+            // Calculate days ago
+            function getDaysAgo(timestamp) {
+                if (!timestamp) return 'Unknown';
+                const created = new Date(parseInt(timestamp) * 1000);
+                const now = new Date();
+                const diffTime = Math.abs(now - created);
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                return `${diffDays} days ago`;
+            }
+
+            // Full Info Form Handler
+            document.getElementById('searchForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                const uid = document.getElementById('uid').value.trim();
+                if (!uid) return;
+
+                document.getElementById('loading').style.display = 'block';
+                document.getElementById('results').style.display = 'none';
+                document.getElementById('infoContent').innerHTML = '';
+                document.getElementById('outfitContent').innerHTML = '';
+
+                try {
+                    // First get account info
+                    const response = await fetch(`/get?uid=${uid}`);
+                    const data = await response.json();
+
+                    document.getElementById('loading').style.display = 'none';
+                    document.getElementById('results').style.display = 'block';
+
+                    if (data.AccountInfo) {
+                        const basicInfo = data.AccountInfo;
+                        const profileInfo = data.AccountProfileInfo || {};
+                        const socialInfo = data.SocialInfo || {};
+                        const clanInfo = data.GuildInfo || {};
+                        const petInfo = data.PetInfo || {};
+                        const creditInfo = data.CreditScoreInfo || {};
+                        const captainInfo = data.GuildOwnerInfo || {};
+
+                        // Calculate ranks using fixed calculation
+                        const brRank = calculateBRRank(profileInfo.BrRankPoint);
+                        const csRank = calculateCSRank(profileInfo.CsRankPoint);
+                        const captainBRRank = calculateBRRank(captainInfo.BrRankPoint);
+                        const captainCSRank = calculateCSRank(captainInfo.CsRankPoint);
+
+                        // Display account info
+                        document.getElementById('infoContent').innerHTML = `
+                            <div class="success">
+                                <strong>✅ PLAYER FOUND!</strong>
+                            </div>
+
+                            <div class="section-title">👤 Player Information</div>
+                            <div class="info-grid">
+                                <div class="info-item">
+                                    <div class="info-label">Player Name</div>
+                                    <div class="info-value">${escapeHtml(basicInfo.AccountName || 'N/A')}</div>
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">UID</div>
+                                    <div class="info-value">${uid}</div>
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">Region</div>
+                                    <div class="info-value">${basicInfo.AccountRegion || 'N/A'}</div>
+                                    <div class="region-badge">${basicInfo.AccountRegion || 'Unknown'}</div>
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">Level</div>
+                                    <div class="info-value">${basicInfo.AccountLevel || '0'}</div>
+                                </div>
+                            </div>
+
+                            <div class="time-info">
+                                <div class="info-grid">
+                                    <div class="info-item">
+                                        <div class="info-label">Account Created</div>
+                                        <div class="info-value">${formatTimestamp(basicInfo.AccountCreateTime)}</div>
+                                        <div class="info-label">${getDaysAgo(basicInfo.AccountCreateTime)}</div>
+                                    </div>
+                                    <div class="info-item">
+                                        <div class="info-label">Last Login</div>
+                                        <div class="info-value">${formatTimestamp(basicInfo.AccountLastLogin)}</div>
+                                        <div class="info-label">Recently</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="section-title">🎯 Rank Information</div>
+                            <div class="info-grid">
+                                <div class="info-item">
+                                    <div class="info-label">BR Rank</div>
+                                    <div class="info-value">${brRank}</div>
+                                    <div class="info-label">Points: ${formatNumber(profileInfo.BrRankPoint || 0)}</div>
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">CS Rank</div>
+                                    <div class="info-value">${csRank}</div>
+                                    <div class="info-label">Total Stars: ${profileInfo.CsRankPoint || 0}</div>
+                                </div>
+                            </div>
+
+                            <div class="section-title">🏰 Guild Information</div>
+                            <div class="info-grid">
+                                <div class="info-item">
+                                    <div class="info-label">Guild Name</div>
+                                    <div class="info-value">${escapeHtml(clanInfo.GuildName || 'No Guild')}</div>
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">Guild Level</div>
+                                    <div class="info-value">${clanInfo.GuildLevel || '0'}</div>
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">Members</div>
+                                    <div class="info-value">${clanInfo.GuildMember || '0'}/${clanInfo.GuildCapacity || '0'}</div>
+                                </div>
+                            </div>
+
+                            ${captainInfo.AccountName ? `
+                                <div class="guild-leader">
+                                    <div class="section-title">👑 Guild Leader</div>
+                                    <div class="info-grid">
+                                        <div class="info-item">
+                                            <div class="info-label">Leader Name</div>
+                                            <div class="info-value">${escapeHtml(captainInfo.AccountName)}</div>
+                                        </div>
+                                        <div class="info-item">
+                                            <div class="info-label">Leader UID</div>
+                                            <div class="info-value">${captainInfo.AccountID}</div>
+                                        </div>
+                                        <div class="info-item">
+                                            <div class="info-label">Leader Level</div>
+                                            <div class="info-value">${captainInfo.AccountLevel || '0'}</div>
+                                        </div>
+                                        <div class="info-item">
+                                            <div class="info-label">Leader BR Rank</div>
+                                            <div class="info-value">${captainBRRank}</div>
+                                        </div>
+                                        <div class="info-item">
+                                            <div class="info-label">Leader CS Rank</div>
+                                            <div class="info-value">${captainCSRank}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            ` : ''}
+
+                            <div class="section-title">📊 Statistics</div>
+                            <div class="stats-grid">
+                                <div class="stat-card">
+                                    <div class="stat-label">Likes</div>
+                                    <div class="stat-value">${formatNumber(basicInfo.AccountLikes || 0)}</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-label">Experience</div>
+                                    <div class="stat-value">${formatNumber(basicInfo.AccountEXP || 0)}</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-label">Honor Score</div>
+                                    <div class="stat-value">${creditInfo.creditScore || '100'}</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-label">Pet Level</div>
+                                    <div class="stat-value">${petInfo.level || '0'}</div>
+                                </div>
+                            </div>
+
+                            ${socialInfo.signature ? `
+                                <div class="section-title">💬 Signature</div>
+                                <div class="info-item">
+                                    <div class="info-value" style="font-style: italic; text-align: center;">"${formatSignature(socialInfo.signature)}"</div>
+                                </div>
+                            ` : ''}
+                        `;
+
+                        // Display outfit image with loading spinner
+                        document.getElementById('outfitContent').innerHTML = `
+                            <div style="text-align: center;">
+                                <div id="outfitLoading" style="margin: 20px 0;">
+                                    <div class="spinner"></div>
+                                    <p style="color: #ff9999; font-size: 1.1rem;">Generating character outfit...</p>
+                                </div>
+                                <img src="https://danger-info-alpha.vercel.app/outfit-image?uid=${uid}&key=DANGER-OUTFIT" alt="Character Outfit" class="outfit-image" onload="document.getElementById('outfitLoading').style.display='none'" onerror="this.style.display='none'; document.getElementById('outfitLoading').innerHTML='<p style=\'color: #ff6b6b; font-size: 1.1rem;\'>Failed to load outfit. Player might have hidden their information.</p>'">
+                            </div>
+                        `;
+                    } else {
+                        document.getElementById('infoContent').innerHTML = `
+                            <div class="error">
+                                ❌ Error: ${data.message || 'Failed to fetch account information'}
+                            </div>
+                        `;
+                    }
+                } catch (error) {
+                    document.getElementById('loading').style.display = 'none';
+                    document.getElementById('infoContent').innerHTML = `
+                        <div class="error">
+                            🌐 Network Error: ${error.message}
+                        </div>
+                    `;
+                }
+            });
+
+            // Region Check Form Handler
+            document.getElementById('regionForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                const uid = document.getElementById('regionUid').value.trim();
+                if (!uid) return;
+
+                document.getElementById('regionLoading').style.display = 'block';
+                document.getElementById('regionResults').style.display = 'none';
+                document.getElementById('regionContent').innerHTML = '';
+
+                try {
+                    const response = await fetch(`/region?uid=${uid}`);
+                    const data = await response.json();
+
+                    document.getElementById('regionLoading').style.display = 'none';
+                    document.getElementById('regionResults').style.display = 'block';
+
+                    if (data.region) {
+                        document.getElementById('regionContent').innerHTML = `
+                            <div class="success">
+                                <strong>✅ REGION FOUND!</strong>
+                            </div>
+
+                            <div style="text-align: center; padding: 30px;">
+                                <div class="info-grid">
+                                    <div class="info-item">
+                                        <div class="info-label">Player UID</div>
+                                        <div class="info-value" style="font-size: 1.4rem;">${data.uid}</div>
+                                    </div>
+                                    <div class="info-item">
+                                        <div class="info-label">Player Name</div>
+                                        <div class="info-value" style="font-size: 1.4rem;">${escapeHtml(data.nickname)}</div>
+                                    </div>
+                                    <div class="info-item">
+                                        <div class="info-label">Region</div>
+                                        <div class="info-value" style="font-size: 1.4rem;">${data.region}</div>
+                                        <div class="region-badge" style="font-size: 1.2rem; padding: 12px 25px;">${data.region}</div>
+                                    </div>
+                                </div>
+
+                                <div style="margin-top: 30px;">
+                                    <div style="font-size: 1.1rem; color: #ff9999; margin-bottom: 15px;">
+                                        🎮 Player Region Information
+                                    </div>
+                                    <div style="background: rgba(0, 180, 219, 0.1); padding: 20px; border-radius: 15px; border: 1px solid rgba(0, 180, 219, 0.3);">
+                                        <p style="margin: 10px 0;">Player <strong>${escapeHtml(data.nickname)}</strong> is registered in the <strong>${data.region}</strong> region.</p>
+                                        <p style="margin: 10px 0;">UID: <strong>${data.uid}</strong></p>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    } else {
+                        document.getElementById('regionContent').innerHTML = `
+                            <div class="error">
+                                ❌ Error: ${data.error || 'Failed to fetch region information'}
+                            </div>
+                        `;
+                    }
+                } catch (error) {
+                    document.getElementById('regionLoading').style.display = 'none';
+                    document.getElementById('regionContent').innerHTML = `
+                        <div class="error">
+                            🌐 Network Error: ${error.message}
+                        </div>
+                    `;
+                }
+            });
+
+            // Function to load API documentation
+            function loadApiDoc() {
+                document.getElementById('apiDocLoading').style.display = 'block';
+                document.getElementById('apiDocResults').style.display = 'none';
+
+                // Directly insert the API documentation content
+                document.getElementById('apiDocContent').innerHTML = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=0.75, maximum-scale=1.0, user-scalable=yes">
+    <title>🔥 TSun - Free Fire API Documentation</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@300;400;700&display=swap" rel="stylesheet">
+    <style>
+        @font-face {
+            font-family: 'Segoe UI';
+            src: local('Segoe UI'), url('https://fonts.gstatic.com/s/segoeui/v12/469_ULH05siIfLwG-CXz9x7kQKw.woff2') format('woff2');
+            font-weight: 300 700;
+            font-display: swap;
+        }
+    </style>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background-color: #F9F6F5;
+            color: #322923;
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow-x: hidden;
+            position: relative;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            position: relative;
+            z-index: 1;
+        }
+        .header {
+            text-align: center;
+            padding: 50px 0;
+            background-color: #F9F6F5;
+            border-radius: 20px;
+            margin-bottom: 30px;
+            border: 1px solid #9A9692;
+            position: relative;
+            overflow: hidden;
+        }
+        .brand {
+            font-size: 4rem;
+            font-weight: bold;
+            color: #9F624E;
+            margin-bottom: 10px;
+            position: relative;
+        }
+        .tagline {
+            color: #B38763;
+            font-size: 1.3rem;
+            margin-bottom: 20px;
+            font-weight: 300;
+        }
+        .section {
+            background-color: white;
+            border-radius: 20px;
+            padding: 30px;
+            margin: 30px 0;
+            border: 1px solid #9A9692;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        }
+        .section-title {
+            color: #9F624E;
+            font-size: 1.8rem;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #B38763;
+            position: relative;
+        }
+        .section-title::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 80px;
+            height: 3px;
+            background-color: #9F624E;
+        }
+        .content-block {
+            margin: 20px 0;
+            padding: 20px;
+            background-color: #F9F6F5;
+            border-radius: 15px;
+            border-left: 4px solid #9F624E;
+        }
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        .grid-item {
+            background-color: white;
+            padding: 20px;
+            border-radius: 15px;
+            border: 1px solid #9A9692;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .grid-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+        .grid-item-title {
+            color: #9F624E;
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #9A9692;
+            padding-bottom: 8px;
+        }
+        .grid-item-content {
+            color: #322923;
+            line-height: 1.6;
+        }
+        .endpoint-card {
+            background-color: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin: 20px 0;
+            border: 1px solid #9A9692;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .endpoint-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+        .endpoint-method {
+            display: inline-block;
+            padding: 8px 15px;
+            border-radius: 25px;
+            font-weight: bold;
+            margin-right: 15px;
+            font-size: 0.9rem;
+            color: white;
+        }
+        .get { background-color: #74847C; }
+        .post { background-color: #B38763; }
+        .endpoint-path {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #9F624E;
+            margin: 15px 0;
+        }
+        .endpoint-description {
+            margin: 15px 0;
+            color: #322923;
+            font-size: 1.1rem;
+        }
+        .parameters-title {
+            color: #9F624E;
+            font-size: 1.2rem;
+            margin: 20px 0 10px 0;
+        }
+        .parameter {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid #9A9692;
+        }
+        .parameter-name {
+            font-weight: bold;
+            color: #9F624E;
+            width: 20%;
+        }
+        .parameter-type {
+            color: #74847C;
+            width: 15%;
+            text-align: center;
+        }
+        .parameter-description {
+            color: #322923;
+            width: 65%;
+        }
+        .response-example {
+            background-color: #F9F6F5;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            overflow-x: auto;
+            border: 1px solid #9A9692;
+        }
+        .credit {
+            text-align: center;
+            margin-top: 40px;
+            color: #9A9692;
+            font-size: 0.9rem;
+            padding: 20px;
+            border-top: 1px solid #9A9692;
+        }
+        .download-btn {
+            display: inline-block;
+            background-color: #9F624E;
+            color: white;
+            padding: 15px 30px;
+            border-radius: 50px;
+            font-weight: bold;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            margin: 20px auto;
+            display: block;
+            width: fit-content;
+            box-shadow: 0 5px 15px rgba(159, 98, 78, 0.3);
+        }
+        .download-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(159, 98, 78, 0.4);
+            background-color: #B38763;
+        }
+        .code-block {
+            background-color: #F9F6F5;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: monospace;
+            margin: 15px 0;
+            border: 1px solid #9A9692;
+        }
+        .error-code {
+            font-weight: bold;
+            color: #9F624E;
+            font-size: 1.2rem;
+        }
+        .error-message {
+            color: #322923;
+            font-size: 1.1rem;
+            margin: 10px 0;
+        }
+        .error-details {
+            color: #74847C;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="brand">TSun FF INFO Api SRC </div>
+            <div class="tagline">Free Fire Account Information API Documentation</div>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">About This API</h2>
+            <div class="content-block">
+                <p style="font-size: 1.1rem; line-height: 1.6;">
+                    The TSun Free Fire API provides access to comprehensive player information from the popular battle royale game Free Fire. This API allows developers to retrieve detailed account information, player statistics, outfit images, and region data for Free Fire players.
+                </p>
+                <p style="font-size: 1.1rem; line-height: 1.6; margin-top: 15px;">
+                    The API is designed to be easy to use and integrate into various applications, from gaming websites to analytics tools. It offers a simple RESTful interface with JSON responses, making it accessible for developers of all skill levels.
+                </p>
+            </div>
+
+            <div class="grid-container">
+                <div class="grid-item">
+                    <div class="grid-item-title">Purpose</div>
+                    <div class="grid-item-content">
+                        Retrieve Free Fire player data including stats, outfit images, and region information.
+                    </div>
+                </div>
+                <div class="grid-item">
+                    <div class="grid-item-title">Technology</div>
+                    <div class="grid-item-content">
+                        RESTful API with JSON responses, designed for easy integration.
+                    </div>
+                </div>
+                <div class="grid-item">
+                    <div class="grid-item-title">Use Cases</div>
+                    <div class="grid-item-content">
+                        Gaming websites, analytics tools, player profile generators, and more.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">Getting Started</h2>
+
+            <div class="grid-container">
+                <div class="grid-item">
+                    <div class="grid-item-title">Base URL</div>
+                    <div class="grid-item-content">
+                        <div class="code-block">
+                            https://fffinfo.tsunstudio.pw
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid-item">
+                    <div class="grid-item-title">Authentication</div>
+                    <div class="grid-item-content">
+                        <p style="margin-bottom: 15px;">
+                            This API does not require authentication for endpoints. In Feature If Premium feature add then users need may need to include an API key in the request headers.
+                        </p>
+                        <div class="code-block">
+                            {
+                                'API-Key': 'your-api-key-here'
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid-item">
+                    <div class="grid-item-title">Rate Limits</div>
+                    <div class="grid-item-content">
+                        <p style="margin-bottom: 15px;">
+                            The API has a rate limit of 100 requests per minute per IP address. Exceeding this limit will result in a 429 Too Many Requests response.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">API Endpoints</h2>
+
+            <div class="grid-container">
+                <div class="grid-item">
+                    <div class="endpoint-method get">GET</div>
+                    <div class="endpoint-path">/get?uid={uid}</div>
+                    <div class="endpoint-description">
+                        Fetch account information for a Free Fire player, and more.
+                    </div>
+
+                    <div class="parameters-title">Parameters</div>
+                    <div class="parameter">
+                        <div class="parameter-type">required</div>
+                        <div class="parameter-description">The player's Free Fire UID</div>
+                    </div>
+
+                    <div class="parameters-title">Response</div>
+                    <div class="response-example">
+                                "AccountName": "PlayerName",
+                                "AccountLevel": 100,
+                                "AccountRegion": "NA",
+                                "AccountCreateTime": "1625097600",
+                                "AccountLastLogin": "1688172800",
+                                "AccountLikes": 12345,
+                                "AccountEXP": 12345678
+                    </div>
+                </div>
+
+                <div class="grid-item">
+                    <div class="endpoint-method get">GET</div>
+                    <div class="endpoint-path">/region?uid={uid}</div>
+                    <div class="endpoint-description">
+                        Check the region of Free Fire player.
+                    </div>
+
+                    <div class="parameters-title">Parameters</div>
+                    <div class="parameter">
+                        <div class="parameter-type">required</div>
+                        <div class="parameter-description">Player's Free Fire UID</div>
+                    </div>
+
+                    <div class="parameters-title">Response</div>
+                    <div class="response-example">
+"uid": "2450675101",
+"nickname": "PlayerName",
+"region": "NA"
+                    </div>
+                </div>
+
+                <div class="grid-item">
+                    <div class="endpoint-method get">GET</div>
+                    <div class="endpoint-path">/outfit-image?uid={uid}</div>
+                    <div class="endpoint-description">
+                        Generate an outfit image for a Free Fire player.
+                    </div>
+
+                    <div class="parameters-title">Parameters</div>
+                    <div class="parameter">
+                        <div class="parameter-type">required</div>
+                        <div class="parameter-description">Player's Free Fire UID</div>
+                    </div>
+
+                    <div class="parameters-title">Response</div>
+                    <div class="response-example">
+Returns a PNG image of the player's outfit
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">Error Handling</h2>
+            <div class="content-block">
+                <p style="margin-bottom: 15px;">
+                    The API uses standard HTTP status codes to indicate the success or failure of an API request. In general:
+                </p>
+            </div>
+
+            <div class="grid-container">
+                <div class="grid-item">
+                    <div class="error-code">200 OK</div>
+                    <div class="error-message">The request was successful</div>
+                    <div class="error-details">The server successfully processed the request and returned the expected response.</div>
+                </div>
+                <div class="grid-item">
+                    <div class="error-code">400 Bad Request</div>
+                    <div class="error-message">The request was invalid or cannot be otherwise served</div>
+                    <div class="error-details">The server cannot process the request due to client error (e.g., malformed request syntax).</div>
+                </div>
+                <div class="grid-item">
+                    <div class="error-code">401 Unauthorized</div>
+                    <div class="error-message">Authentication failed or user doesn't have permissions</div>
+                    <div class="error-details">The request requires user authentication or the user doesn't have the necessary permissions.</div>
+                </div>
+                <div class="grid-item">
+                    <div class="error-code">404 Not Found</div>
+                    <div class="error-message">The requested resource doesn't exist</div>
+                    <div class="error-details">The server cannot find the requested resource. This could be due to an invalid UID or non-existent endpoint.</div>
+                </div>
+                <div class="grid-item">
+                    <div class="error-code">429 Too Many Requests</div>
+                    <div class="error-message">The request limit has been reached</div>
+                    <div class="error-details">The client has sent too many requests in a given amount of time ("rate limiting").</div>
+                </div>
+                <div class="grid-item">
+                    <div class="error-code">500 Internal Server Error</div>
+                    <div class="error-message">An error occurred on the server</div>
+                    <div class="error-details">The server encountered an unexpected condition that prevented it from fulfilling the request.</div>
+                </div>
+            </div>
+
+            <div class="content-block">
+                <h3 style="color: #9F624E; margin-bottom: 15px;">Error Response Format</h3>
+                <div class="response-example">
+                    {
+                        "error": {
+                            "code": 404,
+                            "message": "Player not found",
+                            "details": "The requested player UID does not exist in our database"
+                        }
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">Examples</h2>
+
+            <div class="grid-container">
+                <div class="grid-item">
+                    <h3 style="color: #9F624E; margin-bottom: 15px;">Basic Account Info Request</h3>
+                    <div class="code-block">
+                        https://fffinfo.tsunstudio.pw/get?uid=2646459501
+                    </div>
+                </div>
+
+                <div class="grid-item">
+                    <h3 style="color: #9F624E; margin-bottom: 15px;">Region Check Request</h3>
+                    <div class="code-block">
+                        https://fffinfo.tsunstudio.pw/region?uid=2646459501
+                    </div>
+                </div>
+
+                <div class="grid-item">
+                    <h3 style="color: #9F624E; margin-bottom: 15px;">Outfit Image Request</h3>
+                    <div class="code-block">
+                        https://fffinfo.tsunstudio.pw/outfit-image?uid=2646459501&key=DANGER-OUTFIT
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</body>
+</html>
+                `;
+
+                document.getElementById('apiDocLoading').style.display = 'none';
+                document.getElementById('apiDocResults').style.display = 'block';
+            }
+
+            // Helper functions
+            function escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+
+            // Optimized signature formatting
+            function formatSignature(signature) {
+                if (!signature) return '';
+
+                // Use a single pass for both bold and color formatting
+                return signature.replace(/\[b\](.*?)\[\/b\]/g, '<strong>$1</strong>')
+                               .replace(/\[c\]\[([0-9a-fA-F]{6})\](.*?)\[\/c\]/g, '<span style="color: #$1;">$2</span>');
+            }
+
+            // Format signature with bold and color
+            function formatSignature(signature) {
+                if (!signature) return '';
+
+                // Replace [b] with <strong> and [/b] with </strong>
+                let formatted = signature.replace(/\[b\]/g, '<strong>').replace(/\[\/b\]/g, '</strong>');
+
+                // Replace [c][color] with <span style="color: #color;">
+                formatted = formatted.replace(/\[c\]\[([0-9a-fA-F]{6})\]/g, '<span style="color: #$1;">');
+
+                // Close any remaining color tags
+                formatted = formatted.replace(/\[\/c\]/g, '</span>');
+
+                return formatted;
+            }
+
+            function formatNumber(num) {
+                return parseInt(num || 0).toLocaleString();
+            }
+
+            // Fixed CS Rank calculation - stars continue without reset
+            function calculateCSRank(stars) {
+                stars = parseInt(stars) || 0;
+
+                if (stars >= 187) return `Elite Master – ${stars - 87 + 1}★`;
+                else if (stars >= 137) return `Master – ${stars - 87 + 1}★`;
+                else if (stars >= 112) return `Elite Heroic – ${stars - 87 + 1}★`;
+                else if (stars >= 87) return `Heroic – ${stars - 87 + 1}★`;
+                else if (stars >= 82) return `Diamond V – ${stars - 82 + 1}★`;
+                else if (stars >= 77) return `Diamond IV – ${stars - 77 + 1}★`;
+                else if (stars >= 72) return `Diamond III – ${stars - 72 + 1}★`;
+                else if (stars >= 67) return `Diamond II – ${stars - 67 + 1}★`;
+                else if (stars >= 62) return `Diamond I – ${stars - 62 + 1}★`;
+                else if (stars >= 57) return `Platinum V – ${stars - 57 + 1}★`;
+                else if (stars >= 52) return `Platinum IV – ${stars - 52 + 1}★`;
+                else if (stars >= 47) return `Platinum III – ${stars - 47 + 1}★`;
+                else if (stars >= 42) return `Platinum II – ${stars - 42 + 1}★`;
+                else if (stars >= 37) return `Platinum I – ${stars - 37 + 1}★`;
+                else if (stars >= 33) return `Gold IV – ${stars - 33 + 1}★`;
+                else if (stars >= 29) return `Gold III – ${stars - 29 + 1}★`;
+                else if (stars >= 25) return `Gold II – ${stars - 25 + 1}★`;
+                else if (stars >= 21) return `Gold I – ${stars - 21 + 1}★`;
+                else if (stars >= 17) return `Silver III – ${stars - 17 + 1}★`;
+                else if (stars >= 13) return `Silver II – ${stars - 13 + 1}★`;
+                else if (stars >= 9) return `Silver I – ${stars - 9 + 1}★`;
+                else if (stars >= 6) return `Bronze III – ${stars - 6 + 1}★`;
+                else if (stars >= 3) return `Bronze II – ${stars - 3 + 1}★`;
+                else if (stars >= 0) return `Bronze I – ${stars + 1}★`;
+                else return "Unranked";
+            }
+
+            function calculateBRRank(points) {
+                points = parseInt(points) || 0;
+                if (points >= 10000) return "Elite Master V";
+                else if (points >= 9000) return "Elite Master IV";
+                else if (points >= 8000) return "Elite Master III";
+                else if (points >= 7100) return "Master II";
+                else if (points >= 6300) return "Master I";
+                else if (points >= 5500) return "Elite Heroic V";
+                else if (points >= 4900) return "Elite Heroic IV";
+                else if (points >= 4300) return "Elite Heroic III";
+                else if (points >= 3800) return "Heroic II";
+                else if (points >= 3500) return "Heroic I";
+                else if (points >= 2750) return "Diamond";
+                else if (points >= 2000) return "Platinum";
+                else if (points >= 1600) return "Gold";
+                else if (points >= 1300) return "Silver";
+                else if (points >= 1000) return "Bronze";
+                else return "Unranked";
+            }
+        </script>
+    </body>
+</html>

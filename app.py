@@ -4,7 +4,7 @@ import httpx
 import json
 import os
 from collections import defaultdict
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 from cachetools import TTLCache
 from typing import Tuple
@@ -191,6 +191,36 @@ def refresh_tokens_endpoint():
         return jsonify({'message': 'Tokens refreshed for all regions.'}), 200
     except Exception as e:
         return jsonify({'error': f'Refresh failed: {e}'}), 500
+
+@app.route('/region')
+async def get_region_info():
+    uid = request.args.get('uid')
+    if not uid:
+        return jsonify({"error": "Please provide UID."}), 400
+    
+    try:
+        # Default region for region check
+        region = "PK" 
+        
+        # Get account information to extract region
+        # We only need basicInfo.region, so we can optimize this later if needed
+        return_data = await GetAccountInformation(uid, "7", region, "/GetPlayerPersonalShow")
+        
+        if return_data and return_data.get("basicInfo", {}).get("region"):
+            return jsonify({
+                "uid": uid,
+                "nickname": return_data["basicInfo"]["nickname"],
+                "region": return_data["basicInfo"]["region"]
+            }), 200
+        else:
+            return jsonify({"error": "Region information not found for this UID."}), 404
+            
+    except Exception as e:
+        return jsonify({"error": f"Failed to fetch region information: {e}"}), 500
+
+@app.route('/')
+def index():
+    return render_template('index.html')
 
 # === Startup ===
 async def startup():
