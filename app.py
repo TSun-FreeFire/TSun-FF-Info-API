@@ -22,31 +22,6 @@ MAIN_IV = base64.b64decode('Nm95WkRyMjJFM3ljaGpNJQ==')
 RELEASEVERSION = "OB51"
 USERAGENT = "Dalvik/2.1.0 (Linux; U; Android 7.1.2; ASUS_Z01QD Build/QKQ1.190825.002)"
 SUPPORTED_REGIONS = {"PK", "BR", "US", "SAC", "NA", "SG", "RU", "ID", "TW", "VN", "TH", "ME", "IND", "CIS", "BD", "EU"}
-MAX_RETRIES = 3  # Maximum number of retries for API requests
-RETRY_DELAY = 2  # Initial delay between retries in seconds
-
-# Region timezone offsets in hours (and minutes for IND)
-REGION_TIMEZONES = {
-    "IND": (5, 30),   # UTC+5:30
-    "BR": (-3, 0),    # UTC-3
-    "US": (-5, 0),    # UTC-5
-    "SAC": (5, 0),    # UTC+5
-    "NA": (-5, 0),    # UTC-5
-    "EU": (1, 0),     # UTC+1
-    "ME": (3, 0),     # UTC+3
-    "ID": (7, 0),     # UTC+7
-    "TH": (7, 0),     # UTC+7
-    "VN": (7, 0),     # UTC+7
-    "SG": (8, 0),     # UTC+8
-    "BD": (6, 0),     # UTC+6
-    "PK": (5, 0),     # UTC+5
-    "MY": (8, 0),     # UTC+8
-    "PH": (8, 0),     # UTC+8
-    "RU": (2, 0),     # UTC+2
-    "AFR": (0, 0),    # UTC+0
-    "CIS": (5, 0),    # UTC+5 (assuming similar to SAC)
-    "TW": (8, 0),     # UTC+8
-}
 
 # === Flask App Setup ===
 app = Flask(__name__)
@@ -55,12 +30,6 @@ cache = TTLCache(maxsize=500, ttl=300) # Result cache
 uid_region_cache = TTLCache(maxsize=1000, ttl=3600) # UID -> Region cache
 rate_limit_cache = TTLCache(maxsize=1000, ttl=60) # UID -> Rate limited status
 cached_tokens = defaultdict(dict)
-creds_cache = {} # creds -> info
-region_locks = defaultdict(asyncio.Lock) # Used for creds locking
-scheduler = BackgroundScheduler()
-
-class RateLimitError(Exception):
-    pass
 
 # === Helper Functions ===
 def pad(text: bytes) -> bytes:
@@ -194,80 +163,54 @@ async def get_access_token(account: str):
     url = "https://ffmconnect.live.gop.garenanow.com/oauth/guest/token/grant"
     payload = account + "&response_type=token&client_type=2&client_secret=2ee44819e9b4598845141067b281621874d0d5d7af9d8f7e00c1e54715b7d1e3&client_id=100067"
     headers = {'User-Agent': USERAGENT, 'Connection': "Keep-Alive", 'Accept-Encoding': "gzip", 'Content-Type': "application/x-www-form-urlencoded"}
-    
-    async def fetch():
-        async with httpx.AsyncClient(verify=False, timeout=60.0) as client:
-            resp = await client.post(url, data=payload, headers=headers)
-            data = resp.json()
-            access_token = data.get("access_token", "0")
-            open_id = data.get("open_id", "0")
-            uid = account.split('&')[0].split('=')[1]
-            print(f"Uid: {uid[:5]} Access Token: {access_token[:8]}...", flush=True)
-            return access_token, open_id
-        
-    return await retry_api_request(fetch)
+    async with httpx.AsyncClient(verify=False) as client:
+        resp = await client.post(url, data=payload, headers=headers)
+        data = resp.json()
+        access_token = data.get("access_token", "0")
+        open_id = data.get("open_id", "0")
+        uid = account.split('&')[0].split('=')[1]  # Extract UID from the account string
+        print(f"Uid: {uid[:5]} Access Token: {access_token[:8]}...", flush=True)  # Log the UID and access token
+        return access_token, open_id
 
 async def create_jwt(region: str):
-    creds = get_account_credentials(region)
-    async with region_locks[creds]:
-        # Check if already cached in creds_cache and not expired
-        info = creds_cache.get(creds)
-        if info and time.time() < info['expires_at']:
-            cached_tokens[region] = info
-            return
-
-        try:
-            # Parse credentials
-            parts = creds.split('&')
-            uid = parts[0].split('=')[1]
-            password = parts[1].split('=')[1]
-
-            url = f"https://jwt.tsunstudio.pw/v1/auth/saeed?uid={uid}&password={password}"
-
-            async def fetch_jwt():
-                async with httpx.AsyncClient(verify=False, timeout=60.0) as client:
-                    resp = await client.get(url, timeout=30.0)
-                    if resp.status_code == 200:
-                        return resp.json()
-                    else:
-                        raise Exception(f"Status: {resp.status_code} | Content: {resp.text}")
-
-            data = await retry_api_request(fetch_jwt)
-            
-            token_val = data.get('token')
-            lock_region = data.get('lockRegion')
-            server_url = data.get('serverUrl')
-
-            if not token_val or not server_url:
-                raise Exception(f"Invalid API response: {data}")
-
-            token = f"Bearer {token_val}"
-            print(f"uid: {uid[:5]}, region= {lock_region}, token= {token[:30]}...", flush=True)
-
-            info = {
-                'token': token,
-                'region': lock_region,
-                'server_url': server_url,
-                'expires_at': time.time() + 25200
-            }
-            creds_cache[creds] = info
-            cached_tokens[region] = info
-        except Exception as e:
-            print(f"Error in create_jwt for {region}: {repr(e)}", flush=True)
+    try:
+        creds = get_account_credentials(region)
+        # Parse credentials
+        parts = creds.split('&')
+        uid = parts[0].split('=')[1]
+        password = parts[1].split('=')[1]
+        
+        url = f"https://jwt.tsunstudio.pw/v1/auth/saeed?uid={uid}&password={password}"
+        
+        async with httpx.AsyncClient(verify=False) as client:
+            resp = await client.get(url)
+            if resp.status_code == 200:
+                data = resp.json()
+                token = f"Bearer {data.get('token')}"
+                lock_region = data.get('lockRegion')
+                server_url = data.get('serverUrl')
+                
+                print(f"uid: {uid[:5]}, region= {lock_region}, token= {token[:30]}...", flush=True)
+                
+                cached_tokens[region] = {
+                    'token': token,
+                    'region': lock_region,
+                    'server_url': server_url,
+                    'expires_at': time.time() + 25200
+                }
+            else:
+                print(f"FAIL Region: {region} | Status: {resp.status_code} | Content: {resp.text}", flush=True)
+    except Exception as e:
+        print(f"Error in create_jwt for {region}: {e}", flush=True)
 
 async def initialize_tokens():
     tasks = [create_jwt(r) for r in SUPPORTED_REGIONS]
     await asyncio.gather(*tasks)
 
-def refresh_tokens_job():
-    """Background job to refresh tokens periodically."""
-    try:
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        loop.run_until_complete(initialize_tokens())
-        loop.close()
-    except Exception as e:
-        print(f"Error in refresh_tokens_job: {e}", flush=True)
+async def refresh_tokens_periodically():
+    while True:
+        await asyncio.sleep(25200)
+        await initialize_tokens()
 
 async def get_token_info(region: str) -> Tuple[str, str, str]:
     try:
@@ -285,116 +228,71 @@ async def get_token_info(region: str) -> Tuple[str, str, str]:
         raise
 
 async def GetAccountInformation(uid, unk, region, endpoint):
-    try:
-        payload = await json_to_proto(json.dumps({'a': uid, 'b': unk}), main_pb2.GetPlayerPersonalShow())
-        data_enc = aes_cbc_encrypt(MAIN_KEY, MAIN_IV, payload)
-        token, lock, server = await get_token_info(region)
-        if not server:
-            raise Exception(f"Server URL is missing for region {region}")
-
-        headers = {
-            'User-Agent': USERAGENT, 'Connection': "Keep-Alive", 'Accept-Encoding': "gzip",
-            'Content-Type': "application/octet-stream", 'Expect': "100-continue",
-            'Authorization': token, 'X-Unity-Version': "2018.4.11f1", 'X-GA': "v1 1",
-            'ReleaseVersion': RELEASEVERSION
-        }
-
-        async def make_request():
-            try:
-                async with httpx.AsyncClient(verify=False, timeout=60.0) as client:
-                    resp = await client.post(server + endpoint, data=data_enc, headers=headers, timeout=30.0)
-
-                    if resp.status_code == 429:  # Rate limited
-                        import random
-                        retry_after = int(resp.headers.get('Retry-After', 5))
-                        wait_time = retry_after + random.random() * 2
-                        print(f"Rate limited for UID {uid}. Waiting {wait_time:.2f}s...", flush=True)
-                        rate_limit_cache[uid] = True
-                        await asyncio.sleep(wait_time)
-                        raise RateLimitError(f"Rate limited for UID {uid}")
-
-                    if resp.status_code != 200:
-                        error_msg = f"API Error: {resp.status_code} | Content: {resp.content[:200]}"
-                        print(error_msg, flush=True)
-                        raise Exception(error_msg)
-
-                    try:
-                        return json.loads(json_format.MessageToJson(decode_protobuf(resp.content, AccountPersonalShow_pb2.AccountPersonalShowInfo)))
-                    except Exception as e:
-                        error_msg = f"Protobuf Decode Error for UID {uid}: {e} | Status: {resp.status_code} | Content (Hex): {resp.content.hex()[:100]}"
-                        print(error_msg, flush=True)
-                        raise Exception(error_msg)
-            except Exception as e:
-                error_msg = f"Request failed for UID {uid}: {e}"
-                print(error_msg, flush=True)
-                raise Exception(error_msg)
-            finally:
-                # Ensure resources are cleaned up
-                pass
-
-        return await retry_api_request(make_request)
-    except Exception as e:
-        error_msg = f"Error getting account information for UID {uid}: {e}"
-        print(error_msg, flush=True)
-        raise Exception(error_msg)
+    payload = await json_to_proto(json.dumps({'a': uid, 'b': unk}), main_pb2.GetPlayerPersonalShow())
+    data_enc = aes_cbc_encrypt(MAIN_KEY, MAIN_IV, payload)
+    token, lock, server = await get_token_info(region)
+    headers = {
+        'User-Agent': USERAGENT, 'Connection': "Keep-Alive", 'Accept-Encoding': "gzip",
+        'Content-Type': "application/octet-stream", 'Expect': "100-continue",
+        'Authorization': token, 'X-Unity-Version': "2018.4.11f1", 'X-GA': "v1 1",
+        'ReleaseVersion': RELEASEVERSION
+    }
+    async with httpx.AsyncClient(verify=False) as client:
+        resp = await client.post(server + endpoint, data=data_enc, headers=headers)
+        # print(f"DEBUG: GetAccountInfo {uid} {region} | Server: {server} | Status: {resp.status_code} | Len: {len(resp.content)}", flush=True)
+        if resp.status_code != 200:
+            print(f"API Error: {resp.status_code} | Content: {resp.content[:200]}", flush=True)
+        try:
+            return json.loads(json_format.MessageToJson(decode_protobuf(resp.content, AccountPersonalShow_pb2.AccountPersonalShowInfo)))
+        except Exception as e:
+            print(f"Protobuf Decode Error for UID {uid}: {e} | Status: {resp.status_code} | Content (Hex): {resp.content.hex()[:100]}", flush=True)
+            raise e
 
 def format_response(data):
-    try:
-        region = data.get("basicInfo", {}).get("region", "PK")
-        
-        result = {
-            "AccountInfo": {
-                "AccountName": data.get("basicInfo", {}).get("nickname"),
-                "AccountLevel": data.get("basicInfo", {}).get("level"),
-                "AccountEXP": data.get("basicInfo", {}).get("exp"),
-                "AccountRegion": region,
-                "AccountLikes": data.get("basicInfo", {}).get("liked"),
-                "AccountLastLogin": format_timestamp_with_timezone(
-                    data.get("basicInfo", {}).get("lastLoginAt"), region
-                ),
-                "AccountCreateTime": format_timestamp_with_timezone(
-                    data.get("basicInfo", {}).get("createAt"), region
-                ),
-                "AccountSeasonId": data.get("basicInfo", {}).get("seasonId"),
-            },
-            "AccountProfileInfo": {
-                "BrMaxRank": data.get("basicInfo", {}).get("maxRank"),
-                "BrRankPoint": data.get("basicInfo", {}).get("rankingPoints"),
-                "CsMaxRank": data.get("basicInfo", {}).get("csMaxRank"),
-                "CsRankPoint": data.get("basicInfo", {}).get("csRankingPoints"),
-                "ShowBrRank": data.get("basicInfo", {}).get("showBrRank"),
-                "ShowCsRank": data.get("basicInfo", {}).get("showCsRank"),
-                "Title": data.get("basicInfo", {}).get("title")
-            },
-            "EquippedItemsInfo": {
-                "EquippedAvatarId": data.get("basicInfo", {}).get("headPic"),
-                "EquippedBPBadges": data.get("basicInfo", {}).get("badgeCnt"),
-                "EquippedBPID": data.get("basicInfo", {}).get("badgeId"),
-                "EquippedBannerId": data.get("basicInfo", {}).get("bannerId"),
-                "EquippedOutfit": data.get("profileInfo", {}).get("clothes", []),
-                "EquippedWeapon": data.get("basicInfo", {}).get("weaponSkinShows", []),
-                "EquippedSkills": data.get("profileInfo", {}).get("equipedSkills", [])
-            },
-            "SocialInfo": format_timestamps_in_dict(data.get("socialInfo", {}), region),
-            "PetInfo": format_timestamps_in_dict(data.get("petInfo", {}), region),
-            "AccountType": data.get("basicInfo", {}).get("accountType"),
-            "ReleaseVersion": data.get("basicInfo", {}).get("releaseVersion"),
-            "CreditScoreInfo": data.get("creditScoreInfo", {}),
-            "GuildInfo": {
-                "GuildCapacity": data.get("clanBasicInfo", {}).get("capacity"),
-                "GuildID": str(data.get("clanBasicInfo", {}).get("clanId")),
-                "GuildLevel": data.get("clanBasicInfo", {}).get("clanLevel"),
-                "GuildMember": data.get("clanBasicInfo", {}).get("memberNum"),
-                "GuildName": data.get("clanBasicInfo", {}).get("clanName"),
-                "GuildOwner": str(data.get("clanBasicInfo", {}).get("captainId"))
-            },
-            "GuildOwnerInfo": format_timestamps_in_dict(data.get("captainBasicInfo", {}), region)
-        }
-        return result
-    except Exception as e:
-        error_msg = f"Error formatting response: {e}"
-        print(error_msg, flush=True)
-        raise Exception(error_msg)
+    return {
+        "AccountInfo": {
+            "AccountName": data.get("basicInfo", {}).get("nickname"),
+            "AccountLevel": data.get("basicInfo", {}).get("level"),
+            "AccountEXP": data.get("basicInfo", {}).get("exp"),
+            "AccountRegion": data.get("basicInfo", {}).get("region"),
+            "AccountLikes": data.get("basicInfo", {}).get("liked"),
+            "AccountLastLogin": data.get("basicInfo", {}).get("lastLoginAt"),
+            "AccountCreateTime": data.get("basicInfo", {}).get("createAt"),
+            "AccountSeasonId": data.get("basicInfo", {}).get("seasonId"),
+        },
+        "AccountProfileInfo": {
+            "BrMaxRank": data.get("basicInfo", {}).get("maxRank"),
+            "BrRankPoint": data.get("basicInfo", {}).get("rankingPoints"),
+            "CsMaxRank": data.get("basicInfo", {}).get("csMaxRank"),
+            "CsRankPoint": data.get("basicInfo", {}).get("csRankingPoints"),
+            "ShowBrRank": data.get("basicInfo", {}).get("showBrRank"),
+            "ShowCsRank": data.get("basicInfo", {}).get("showCsRank"),
+            "Title": data.get("basicInfo", {}).get("title")
+        },
+        "EquippedItemsInfo": {
+            "EquippedAvatarId": data.get("basicInfo", {}).get("headPic"),
+            "EquippedBPBadges": data.get("basicInfo", {}).get("badgeCnt"),
+            "EquippedBPID": data.get("basicInfo", {}).get("badgeId"),
+            "EquippedBannerId": data.get("basicInfo", {}).get("bannerId"),
+            "EquippedOutfit": data.get("profileInfo", {}).get("clothes", []),
+            "EquippedWeapon": data.get("basicInfo", {}).get("weaponSkinShows", []),
+            "EquippedSkills": data.get("profileInfo", {}).get("equipedSkills", [])
+        },
+        "SocialInfo": data.get("socialInfo", {}),
+        "PetInfo": data.get("petInfo", {}),
+        "AccountType": data.get("basicInfo", {}).get("accountType"),
+        "ReleaseVersion": data.get("basicInfo", {}).get("releaseVersion"),
+        "CreditScoreInfo": data.get("creditScoreInfo", {}),
+        "GuildInfo": {
+            "GuildCapacity": data.get("clanBasicInfo", {}).get("capacity"),
+            "GuildID": str(data.get("clanBasicInfo", {}).get("clanId")),
+            "GuildLevel": data.get("clanBasicInfo", {}).get("clanLevel"),
+            "GuildMember": data.get("clanBasicInfo", {}).get("memberNum"),
+            "GuildName": data.get("clanBasicInfo", {}).get("clanName"),
+            "GuildOwner": str(data.get("clanBasicInfo", {}).get("captainId"))
+        },
+        "GuildOwnerInfo": data.get("captainBasicInfo", {})
+    }
 
 # === API Routes ===
 @app.route('/get')
@@ -520,10 +418,7 @@ def index():
 # === Startup ===
 async def startup():
     await initialize_tokens()
-    # Schedule token refresh every 7 hours (25200 seconds)
-    scheduler.add_job(refresh_tokens_job, 'interval', seconds=25200, id='token_refresh')
-    scheduler.start()
-    print("Token refresh scheduler started.", flush=True)
+    asyncio.create_task(refresh_tokens_periodically())
 
 if __name__ == '__main__':
     loop = asyncio.new_event_loop()
