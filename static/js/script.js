@@ -340,9 +340,8 @@ function formatNumber(num) {
 function getRegionFlag(region) {
     // Special emoji cases for ME, EU, SAC
     const emojiFlags = {
-        'ME': '🌍',
-        'EU': '🌏',
-        'SAC': '🌎'
+        'NOOBI': '🌏',
+        'NOOB': '🌎'
     };
 
     if (emojiFlags[region]) {
@@ -355,12 +354,18 @@ function getRegionFlag(region) {
         'BR': 'br.png',
         'ID': 'id.png',
         'IND': 'ind.png',
-        'NA': 'na.png',
+        'AFR': 'afr.png',
         'PK': 'pk.png',
         'RU': 'ru.png',
         'TH': 'th.png',
-        'TW': 'tw.png',
+        'EU': 'eu.png',
         'US': 'us.png',
+        'ME': 'me.png',
+        'SAC': 'sac.png',
+        'NA': 'na.png',
+        'MY': 'my.png',
+        'PH': 'ph.png',
+        'SG': 'sg.png',
         'VN': 'vn.png'
     };
 
