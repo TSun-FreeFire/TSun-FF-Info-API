@@ -76,6 +76,7 @@ async function handleAccountSearch(e) {
     e.preventDefault();
     const uidInput = document.getElementById('uid');
     const uid = uidInput.value.trim();
+    const regionGroup = document.getElementById('regionGroup').value;
 
     if (!uid) return;
 
@@ -91,7 +92,7 @@ async function handleAccountSearch(e) {
     outfitContent.innerHTML = '';
 
     try {
-        const response = await fetch(`/get?uid=${uid}`);
+        const response = await fetch(`/get?uid=${uid}&region_group=${regionGroup}`);
         const data = await response.json();
 
         loadingEl.style.display = 'none';
@@ -113,6 +114,7 @@ async function handleRegionCheck(e) {
     e.preventDefault();
     const uidInput = document.getElementById('regionUid');
     const uid = uidInput.value.trim();
+    const regionGroup = document.getElementById('regionCheckRegionGroup').value;
 
     if (!uid) return;
 
@@ -125,7 +127,7 @@ async function handleRegionCheck(e) {
     regionContent.innerHTML = '';
 
     try {
-        const response = await fetch(`/region?uid=${uid}`);
+        const response = await fetch(`/region?uid=${uid}&region_group=${regionGroup}`);
         const data = await response.json();
 
         loadingEl.style.display = 'none';
@@ -147,6 +149,7 @@ async function handleFullResponse(e) {
     e.preventDefault();
     const uidInput = document.getElementById('fullResponseUid');
     const uid = uidInput.value.trim();
+    const regionGroup = document.getElementById('fullResponseRegionGroup').value;
 
     if (!uid) return;
 
@@ -159,7 +162,7 @@ async function handleFullResponse(e) {
     jsonViewer.innerHTML = '';
 
     try {
-        const response = await fetch(`/get?uid=${uid}`);
+        const response = await fetch(`/get?uid=${uid}&region_group=${regionGroup}`);
         const data = await response.json();
 
         loadingEl.style.display = 'none';

@@ -20,7 +20,7 @@ import base64
 MAIN_KEY = base64.b64decode('WWcmdGMlREV1aDYlWmNeOA==')
 MAIN_IV = base64.b64decode('Nm95WkRyMjJFM3ljaGpNJQ==')
 RELEASEVERSION = "OB52"
-USERAGENT = "Dalvik/2.1.0 (Linux; U; Android 7.1.2; ASUS_Z01QD Build/QKQ1.190825.002)"
+USERAGENT = "Mozilla/5.0 (Linux; Android 15; Pixel 8 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.7499.146 Mobile Safari/537.36"
 SUPPORTED_REGIONS = {"PK", "BR", "US", "SAC", "NA", "SG", "RU", "ID", "TW", "VN", "TH", "ME", "IND", "CIS", "BD", "EU"}
 MAX_RETRIES = 3  # Maximum number of retries for API requests
 RETRY_DELAY = 2  # Initial delay between retries in seconds
@@ -48,6 +48,22 @@ REGION_TIMEZONES = {
     "TW": (8, 0),     # UTC+8
 }
 
+# Region group to endpoint mapping
+REGION_GROUP_ENDPOINTS = {
+    "GLOBAL": "https://clientbp.ggblueshark.com",  # EU, ME, ID, TH, VN, SG, BD, PK, MY, PH, RU, AFR
+    "IND": "https://client.ind.freefiremobile.com",  # IND
+    "Other": "https://client.us.freefiremobile.com"  # BR, US, SAC, NA
+}
+
+# Mapping of regions to region groups
+REGION_TO_GROUP = {
+    "EU": "GLOBAL", "ME": "GLOBAL", "ID": "GLOBAL", "TH": "GLOBAL",
+    "VN": "GLOBAL", "SG": "GLOBAL", "BD": "GLOBAL", "PK": "GLOBAL",
+    "MY": "GLOBAL", "PH": "GLOBAL", "RU": "GLOBAL", "AFR": "GLOBAL",
+    "IND": "IND",
+    "BR": "Other", "US": "Other", "SAC": "Other", "NA": "Other"
+}
+
 # === Flask App Setup ===
 app = Flask(__name__)
 CORS(app)
@@ -63,6 +79,11 @@ class RateLimitError(Exception):
     pass
 
 # === Helper Functions ===
+def get_server_url_for_region_group(region_group: str) -> str:
+    """
+    Get the server URL based on region group (GLOBAL, IND, Other).
+    """
+    return REGION_GROUP_ENDPOINTS.get(region_group, REGION_GROUP_ENDPOINTS["GLOBAL"])
 def pad(text: bytes) -> bytes:
     padding_length = AES.block_size - (len(text) % AES.block_size)
     return text + bytes([padding_length] * padding_length)
@@ -284,12 +305,16 @@ async def get_token_info(region: str) -> Tuple[str, str, str]:
         print(f"Error getting token info for region {region}: {repr(e)}", flush=True)
         raise
 
-async def GetAccountInformation(uid, unk, region, endpoint):
+async def GetAccountInformation(uid, unk, region, endpoint, custom_server_url=None):
     try:
         payload = await json_to_proto(json.dumps({'a': uid, 'b': unk}), main_pb2.GetPlayerPersonalShow())
         data_enc = aes_cbc_encrypt(MAIN_KEY, MAIN_IV, payload)
         token, lock, server = await get_token_info(region)
-        if not server:
+        
+        # Use custom server URL if provided, otherwise use the default from token info
+        if custom_server_url:
+            server = custom_server_url
+        elif not server:
             raise Exception(f"Server URL is missing for region {region}")
 
         headers = {
@@ -406,7 +431,13 @@ async def get_account_info():
     region_param = request.args.get('region')
     region = (region_param or "PK").upper()
     
-    cache_key = f"get_{uid}_{region}"
+    # Get region group parameter (GLOBAL, IND, Other)
+    region_group = request.args.get('region_group', '').strip()
+    custom_server_url = None
+    if region_group:
+        custom_server_url = get_server_url_for_region_group(region_group)
+    
+    cache_key = f"get_{uid}_{region}_{region_group}"
     cached_res = cache.get(cache_key)
     if cached_res:
         return jsonify(cached_res), 200
@@ -422,7 +453,7 @@ async def get_account_info():
                 region = cached_region
 
         # Try primary region
-        return_data = await GetAccountInformation(uid, "7", region, "/GetPlayerPersonalShow")
+        return_data = await GetAccountInformation(uid, "7", region, "/GetPlayerPersonalShow", custom_server_url)
     except RateLimitError as e:
         return jsonify({"error": str(e)}), 429
     except Exception:
@@ -435,7 +466,7 @@ async def get_account_info():
                 try:
                     # Use fewer retries for auto-detection to avoid triggering more rate limits
                     return_data = await retry_api_request(
-                        GetAccountInformation, uid, "7", r, "/GetPlayerPersonalShow",
+                        GetAccountInformation, uid, "7", r, "/GetPlayerPersonalShow", custom_server_url,
                         max_retries=1 
                     )
                     found = True
@@ -479,7 +510,13 @@ async def get_region_info():
     if not uid:
         return jsonify({"error": "Please provide UID."}), 400
 
-    cache_key = f"region_{uid}"
+    # Get region group parameter (GLOBAL, IND, Other)
+    region_group = request.args.get('region_group', '').strip()
+    custom_server_url = None
+    if region_group:
+        custom_server_url = get_server_url_for_region_group(region_group)
+
+    cache_key = f"region_{uid}_{region_group}"
     cached_res = cache.get(cache_key)
     if cached_res:
         return jsonify(cached_res), 200
@@ -489,7 +526,7 @@ async def get_region_info():
         cached_region = uid_region_cache.get(uid)
         region = cached_region or request.args.get('region', 'PK').upper()
 
-        return_data = await GetAccountInformation(uid, "7", region, "/GetPlayerPersonalShow")
+        return_data = await GetAccountInformation(uid, "7", region, "/GetPlayerPersonalShow", custom_server_url)
 
         if return_data and return_data.get("basicInfo", {}).get("region"):
             res = {
