@@ -27,41 +27,17 @@ RETRY_DELAY = 2  # Initial delay between retries in seconds
 
 # Region timezone offsets in hours (and minutes for IND)
 REGION_TIMEZONES = {
-    "IND": (5, 30),   # UTC+5:30
-    "BR": (-3, 0),    # UTC-3
-    "US": (-5, 0),    # UTC-5
-    "SAC": (5, 0),    # UTC+5
-    "NA": (-5, 0),    # UTC-5
-    "EU": (1, 0),     # UTC+1
-    "ME": (3, 0),     # UTC+3
-    "ID": (7, 0),     # UTC+7
-    "TH": (7, 0),     # UTC+7
-    "VN": (7, 0),     # UTC+7
-    "SG": (8, 0),     # UTC+8
-    "BD": (6, 0),     # UTC+6
-    "PK": (5, 0),     # UTC+5
-    "MY": (8, 0),     # UTC+8
-    "PH": (8, 0),     # UTC+8
-    "RU": (2, 0),     # UTC+2
-    "AFR": (0, 0),    # UTC+0
-    "CIS": (5, 0),    # UTC+5 (assuming similar to SAC)
-    "TW": (8, 0),     # UTC+8
+    "PK": (5, 0)     # UTC+5
 }
 
 # Region group to endpoint mapping
 REGION_GROUP_ENDPOINTS = {
-    "GLOBAL": "https://clientbp.ggblueshark.com",  # EU, ME, ID, TH, VN, SG, BD, PK, MY, PH, RU, AFR
-    "IND": "https://client.ind.freefiremobile.com",  # IND
-    "Other": "https://client.us.freefiremobile.com"  # BR, US, SAC, NA
+    "GLOBAL": "https://clientbp.ggblueshark.com"
 }
 
 # Mapping of regions to region groups
 REGION_TO_GROUP = {
-    "EU": "GLOBAL", "ME": "GLOBAL", "ID": "GLOBAL", "TH": "GLOBAL",
-    "VN": "GLOBAL", "SG": "GLOBAL", "BD": "GLOBAL", "PK": "GLOBAL",
-    "MY": "GLOBAL", "PH": "GLOBAL", "RU": "GLOBAL", "AFR": "GLOBAL",
-    "IND": "IND",
-    "BR": "Other", "US": "Other", "SAC": "Other", "NA": "Other"
+    "PK": "GLOBAL"
 }
 
 # === Flask App Setup ===
@@ -174,23 +150,11 @@ async def json_to_proto(json_data: str, proto_message: Message) -> bytes:
 def get_account_credentials(region: str) -> str:
     r = region.upper()
     if r == "PK":
-        return "uid=4270874354&password=saeedxrarexmotokaka_HRWS9_BY_SaeedxDie_26E4C"
-    elif r == "BD":
-        return "uid=4260559999&password=saeedxmotoxkaka_3PJ4Z1XNC3Q"
-    elif r == "ME":
-        return "uid=4260531157&password=saeedxmotoxkaka_J7FAA5VUJ1H"
-    elif r == "SAC":
-        return "uid=4260531157&password=saeedxmotoxkaka_J7FAA5VUJ1H"
-    elif r == "IND":
-        return "uid=4213341828&password=WIND-0GAT2HKEN-X"
-    elif r == "NA":
-        return "uid=4051729572&password=0FE5F51725509983A8369EAACCA1F2B2CCB15F2F027163FC32BFA2AA307C58E3"
-    elif r == "US":
-        return "uid=4038272419&password=A82E0644DF741410E73E2AFA5AD1013F96B414A137C9932DF14D72BB87E6A479"
-    elif r == "BR":
-        return "uid=3767114815&password=585FE46BB609FF12A3D6194890F7B9734157096A325ED25138E385287810C39A"
+        return "uid=4151820671&password=YVQ7NA72CA3FCB23JX0YQNDXAGX84P2T4X3COJPV4Q1T3P5M419ECO12LTI7G2LS"
+    elif r == "PK":
+        return "uid=4293442406&password=I_LCOQG_BY_SPIDEERIO_GAMING_DCK7L"
     else:
-        return "uid=4213341828&password=WIND-0GAT2HKEN-X"
+        return "uid=4151820470&password=2989RQU70IQ5XBHGS4DLT9UVBKRFOKXFAR1VDDTE1OJBHDG5SL89U2CYVOKJ0IZW"
 
 async def retry_api_request(func, *args, max_retries=MAX_RETRIES, initial_delay=RETRY_DELAY, **kwargs):
     """
