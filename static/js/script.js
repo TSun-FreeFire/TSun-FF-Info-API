@@ -446,25 +446,60 @@ function copyJsonToClipboard() {
     });
 }
 
-// Rank Calculations (Simplified logic based on typical FF points)
+// Rank Calculations (Detailed logic based on provided requirements)
 function calculateBRRank(points) {
-    points = parseInt(points) || 0;
-    if (points < 1000) return "Bronze";
-    if (points < 1500) return "Silver";
-    if (points < 2000) return "Gold";
-    if (points < 2500) return "Platinum";
-    if (points < 3000) return "Diamond";
-    if (points < 3500) return "Heroic";
-    return "Grandmaster";
+    try {
+        points = parseInt(points) || 0;
+        if (points >= 10000) return "Elite Master V";
+        else if (points >= 9000) return "Elite Master IV";
+        else if (points >= 8000) return "Elite Master III";
+        else if (points >= 7100) return "Master II";
+        else if (points >= 6300) return "Master I";
+        else if (points >= 5500) return "Elite Heroic V";
+        else if (points >= 4900) return "Elite Heroic IV";
+        else if (points >= 4300) return "Elite Heroic III";
+        else if (points >= 3800) return "Heroic II";
+        else if (points >= 3500) return "Heroic I";
+        else if (points >= 2750) return "Diamond";
+        else if (points >= 2000) return "Platinum";
+        else if (points >= 1600) return "Gold";
+        else if (points >= 1300) return "Silver";
+        else if (points >= 1000) return "Bronze";
+        else return "Unranked";
+    } catch {
+        return "Unknown";
+    }
 }
 
-function calculateCSRank(points) {
-    points = parseInt(points) || 0;
-    if (points < 5) return "Bronze";
-    if (points < 10) return "Silver";
-    if (points < 20) return "Gold";
-    if (points < 30) return "Platinum";
-    if (points < 40) return "Diamond";
-    if (points < 50) return "Heroic";
-    return "Grandmaster";
+function calculateCSRank(stars) {
+    try {
+        stars = parseInt(stars) || 0;
+        if (stars >= 187) return `Elite Master – ${stars - 87 + 1}★`;
+        else if (stars >= 137) return `Master – ${stars - 87 + 1}★`;
+        else if (stars >= 112) return `Elite Heroic – ${stars - 87 + 1}★`;
+        else if (stars >= 87) return `Heroic – ${stars - 87 + 1}★`;
+        else if (stars >= 82) return `Diamond V – ${stars - 82 + 1}★`;
+        else if (stars >= 77) return `Diamond IV – ${stars - 77 + 1}★`;
+        else if (stars >= 72) return `Diamond III – ${stars - 72 + 1}★`;
+        else if (stars >= 67) return `Diamond II – ${stars - 67 + 1}★`;
+        else if (stars >= 62) return `Diamond I – ${stars - 62 + 1}★`;
+        else if (stars >= 57) return `Platinum V – ${stars - 57 + 1}★`;
+        else if (stars >= 52) return `Platinum IV – ${stars - 52 + 1}★`;
+        else if (stars >= 47) return `Platinum III – ${stars - 47 + 1}★`;
+        else if (stars >= 42) return `Platinum II – ${stars - 42 + 1}★`;
+        else if (stars >= 37) return `Platinum I – ${stars - 37 + 1}★`;
+        else if (stars >= 33) return `Gold IV – ${stars - 33 + 1}★`;
+        else if (stars >= 29) return `Gold III – ${stars - 29 + 1}★`;
+        else if (stars >= 25) return `Gold II – ${stars - 25 + 1}★`;
+        else if (stars >= 21) return `Gold I – ${stars - 21 + 1}★`;
+        else if (stars >= 17) return `Silver III – ${stars - 17 + 1}★`;
+        else if (stars >= 13) return `Silver II – ${stars - 13 + 1}★`;
+        else if (stars >= 9) return `Silver I – ${stars - 9 + 1}★`;
+        else if (stars >= 6) return `Bronze III – ${stars - 6 + 1}★`;
+        else if (stars >= 3) return `Bronze II – ${stars - 3 + 1}★`;
+        else if (stars >= 0) return `Bronze I – ${stars + 1}★`;
+        else return "Unranked";
+    } catch {
+        return "Unknown";
+    }
 }

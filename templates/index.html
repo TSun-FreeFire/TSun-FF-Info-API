@@ -52,9 +52,7 @@
                     <form id="searchForm">
                         <div class="input-group">
                             <select class="region-selector" id="regionGroup">
-                                <option value="GLOBAL">🌍 GLOBAL</option>
-                                <option value="IND">🇮🇳 IND</option>
-                                <option value="Other">🌎 Other</option>
+                                <option value="PK">🌍 PK</option>
                             </select>
                             <input type="text" class="search-input" id="uid" placeholder="Enter Player UID..." required
                                 autocomplete="off">
@@ -92,12 +90,10 @@
                     <form id="fullResponseForm">
                         <div class="input-group">
                             <select class="region-selector" id="fullResponseRegionGroup">
-                                <option value="GLOBAL">🌍 GLOBAL</option>
-                                <option value="IND">🇮🇳 IND</option>
-                                <option value="Other">🌎 Other</option>
+                                <option value="PK">🌍 PK</option>
                             </select>
-                            <input type="text" class="search-input" id="fullResponseUid" placeholder="Enter Player UID..." required
-                                autocomplete="off">
+                            <input type="text" class="search-input" id="fullResponseUid"
+                                placeholder="Enter Player UID..." required autocomplete="off">
                             <button type="submit" class="action-btn">Fetch Data</button>
                         </div>
                     </form>
@@ -113,7 +109,8 @@
                         <div class="card-header">
                             <div class="card-title"><span class="card-icon">📋</span> JSON Response</div>
                             <button id="copyJsonBtn" class="copy-btn" title="Copy to clipboard">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
                                     <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
                                     <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
                                 </svg>
@@ -136,9 +133,7 @@
                     <form id="regionForm">
                         <div class="input-group">
                             <select class="region-selector" id="regionCheckRegionGroup">
-                                <option value="GLOBAL">🌍 GLOBAL</option>
-                                <option value="IND">🇮🇳 IND</option>
-                                <option value="Other">🌎 Other</option>
+                                <option value="PK">🌍 PK</option>
                             </select>
                             <input type="text" class="search-input" id="regionUid" placeholder="Enter Player UID..."
                                 required autocomplete="off">
@@ -189,7 +184,7 @@
                                     "AccountInfo": {
                                     "AccountName": "PlayerName",
                                     "AccountLevel": 75,
-                                    "AccountRegion": "NA"
+                                    "AccountRegion": "PK"
                                     },
                                     "SocialInfo": { ... }
                                     }
@@ -216,7 +211,7 @@
                                 <div class="code-snippet">
                                     {
                                     "uid": "123456789",
-                                    "region": "NA",
+                                    "region": "PK",
                                     "nickname": "PlayerName"
                                     }
                                 </div>

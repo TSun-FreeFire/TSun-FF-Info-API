@@ -21,7 +21,7 @@ MAIN_KEY = base64.b64decode('WWcmdGMlREV1aDYlWmNeOA==')
 MAIN_IV = base64.b64decode('Nm95WkRyMjJFM3ljaGpNJQ==')
 RELEASEVERSION = "OB52"
 USERAGENT = "Mozilla/5.0 (Linux; Android 15; Pixel 8 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.7499.146 Mobile Safari/537.36"
-SUPPORTED_REGIONS = {"PK", "BR", "US", "SAC", "NA", "SG", "RU", "ID", "TW", "VN", "TH", "ME", "IND", "CIS", "BD", "EU"}
+SUPPORTED_REGIONS = {"PK"}
 MAX_RETRIES = 3  # Maximum number of retries for API requests
 RETRY_DELAY = 2  # Initial delay between retries in seconds
 
@@ -32,12 +32,12 @@ REGION_TIMEZONES = {
 
 # Region group to endpoint mapping
 REGION_GROUP_ENDPOINTS = {
-    "GLOBAL": "https://clientbp.ggblueshark.com"
+    "PK": "https://clientbp.ggblueshark.com"
 }
 
 # Mapping of regions to region groups
 REGION_TO_GROUP = {
-    "PK": "GLOBAL"
+    "PK": "PK"
 }
 
 # === Flask App Setup ===
@@ -57,9 +57,9 @@ class RateLimitError(Exception):
 # === Helper Functions ===
 def get_server_url_for_region_group(region_group: str) -> str:
     """
-    Get the server URL based on region group (GLOBAL, IND, Other).
+    Get the server URL based on region group (PK).
     """
-    return REGION_GROUP_ENDPOINTS.get(region_group, REGION_GROUP_ENDPOINTS["GLOBAL"])
+    return REGION_GROUP_ENDPOINTS.get(region_group, REGION_GROUP_ENDPOINTS["PK"])
 def pad(text: bytes) -> bytes:
     padding_length = AES.block_size - (len(text) % AES.block_size)
     return text + bytes([padding_length] * padding_length)
@@ -395,7 +395,7 @@ async def get_account_info():
     region_param = request.args.get('region')
     region = (region_param or "PK").upper()
     
-    # Get region group parameter (GLOBAL, IND, Other)
+    # Get region group parameter (PK, IND, Other)
     region_group = request.args.get('region_group', '').strip()
     custom_server_url = None
     if region_group:
@@ -474,7 +474,7 @@ async def get_region_info():
     if not uid:
         return jsonify({"error": "Please provide UID."}), 400
 
-    # Get region group parameter (GLOBAL, IND, Other)
+    # Get region group parameter (PK, IND, Other)
     region_group = request.args.get('region_group', '').strip()
     custom_server_url = None
     if region_group:
