@@ -474,9 +474,9 @@ function calculateBRRank(points) {
 function calculateCSRank(stars) {
     try {
         stars = parseInt(stars) || 0;
-        if (stars >= 187) return `Elite Master – ${stars - 87 + 1}★`;
-        else if (stars >= 137) return `Master – ${stars - 87 + 1}★`;
-        else if (stars >= 112) return `Elite Heroic – ${stars - 87 + 1}★`;
+        if (stars >= 187) return `Elite Master – ${stars - 187 + 1}★`;
+        else if (stars >= 137) return `Master – ${stars - 137 + 1}★`;
+        else if (stars >= 112) return `Elite Heroic – ${stars - 112 + 1}★`;
         else if (stars >= 87) return `Heroic – ${stars - 87 + 1}★`;
         else if (stars >= 82) return `Diamond V – ${stars - 82 + 1}★`;
         else if (stars >= 77) return `Diamond IV – ${stars - 77 + 1}★`;

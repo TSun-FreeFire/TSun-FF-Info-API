@@ -4,7 +4,7 @@ import httpx
 import json
 import os
 from collections import defaultdict
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from apscheduler.schedulers.background import BackgroundScheduler
 from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
@@ -81,8 +81,8 @@ def format_timestamp_with_timezone(timestamp, region):
         # Convert string to int if needed
         timestamp = int(timestamp)
         
-        # Create datetime from UTC timestamp
-        dt_utc = datetime.utcfromtimestamp(timestamp)
+        # Create timezone-aware datetime from UTC timestamp
+        dt_utc = datetime.fromtimestamp(timestamp, tz=timezone.utc)
         
         # Get timezone offset for region
         hours, minutes = REGION_TIMEZONES.get(region, (0, 0))
@@ -151,8 +151,6 @@ def get_account_credentials(region: str) -> str:
     r = region.upper()
     if r == "PK":
         return "uid=4151820671&password=YVQ7NA72CA3FCB23JX0YQNDXAGX84P2T4X3COJPV4Q1T3P5M419ECO12LTI7G2LS"
-    elif r == "PK":
-        return "uid=4293442406&password=I_LCOQG_BY_SPIDEERIO_GAMING_DCK7L"
     else:
         return "uid=4151820470&password=2989RQU70IQ5XBHGS4DLT9UVBKRFOKXFAR1VDDTE1OJBHDG5SL89U2CYVOKJ0IZW"
 
@@ -524,9 +522,11 @@ def serve_flag(filename):
 
 @app.route('/')
 def index():
+    current_year = datetime.now(timezone.utc).year
     return render_template(
         'index.html',
-        release_version=RELEASEVERSION
+        release_version=RELEASEVERSION,
+        current_year=current_year
     )
 
 # === Startup ===
