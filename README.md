@@ -1,5 +1,5 @@
 
-<h1 align="center">🔥 FreeFire Info API 🔥</h1>
+<h1 align="center">🔥 FreeFire Info API (OB53) 🔥</h1>
 
 <p align="center">
   <b>A lightweight, fast & secure API for fetching Free Fire player profiles</b><br>
@@ -18,7 +18,7 @@
 
 ## ⚡ Overview
 
-This project exposes a **Free Fire Player Info API** that:
+This project exposes a **Free Fire Player Info API (OB53-ready)** that:
 - Retrieves player profiles by UID  
 - Handles token refresh automatically  
 - Uses **AES-CBC encryption** & **Protobuf serialization**  
@@ -40,12 +40,13 @@ This project exposes a **Free Fire Player Info API** that:
 
 | Endpoint | Method | Description |
 |-----------|--------|-------------|
-| `/get?uid=<PLAYER_UID>` | GET | Fetch player profile data |
+| `/get?uid=<PLAYER_UID>&region_group=GLOBAL` | GET | Fetch player profile data |
+| `/region?uid=<PLAYER_UID>&region_group=GLOBAL` | GET | Fetch player region and nickname |
 | `/refresh` | GET | Manually refresh all region tokens |
 
 **Example Usage**
 ```bash
-GET /get?uid=123456789
+GET /get?uid=123456789&region_group=GLOBAL
 ````
 
 **Response**

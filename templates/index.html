@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
-    <title>TSun Info | Professional Free Fire Tools</title>
+    <title>TSun Info OB53 | Free Fire Tools</title>
     <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
 
     <!-- Fonts -->
@@ -29,7 +29,7 @@
             <div class="brand">
                 <div class="brand-logo">🔥</div>
                 <div class="brand-text">TSun Info</div>
-                <div class="brand-badge">OB52</div>
+                <div class="brand-badge">{{ release_version }}</div>
             </div>
 
             <!-- Navigation -->
@@ -47,7 +47,7 @@
             <section id="fullInfo" class="tab-content active">
                 <div class="search-interface">
                     <h1 class="search-title">Player Intelligence</h1>
-                    <p class="search-subtitle">Retrieve detailed account statistics and outfit data.</p>
+                    <p class="search-subtitle">Retrieve account stats, rank, social and outfit data.</p>
 
                     <form id="searchForm">
                         <div class="input-group">
@@ -164,21 +164,21 @@
                 <div class="docs-container">
                     <div style="text-align: center; margin-bottom: 40px;">
                         <h1 class="search-title">Developer API</h1>
-                        <p class="search-subtitle">Integrate Free Fire data into your own applications.</p>
+                        <p class="search-subtitle">Integrate Free Fire OB53 data into your own applications.</p>
                     </div>
 
                     <div class="endpoint-block">
                         <div class="endpoint-header">
                             <span class="method get">GET</span>
-                            <span class="path">/get?uid=12345678</span>
+                            <span class="path">/get?uid=12345678&amp;region_group=GLOBAL</span>
                         </div>
                         <div class="endpoint-body">
                             <p style="margin-bottom: 15px; color: var(--text-muted);">Fetch comprehensive account
                                 information, including stats, guild data, and social info.</p>
 
                             <div class="info-row">
-                                <span class="info-label">Parameter</span>
-                                <span class="info-value">uid (required)</span>
+                                <span class="info-label">Parameters</span>
+                                <span class="info-value">uid (required), region_group (optional: GLOBAL | IND | Other), region (optional)</span>
                             </div>
 
                             <div style="margin-top: 15px;">
@@ -201,15 +201,15 @@
                     <div class="endpoint-block">
                         <div class="endpoint-header">
                             <span class="method get">GET</span>
-                            <span class="path">/region?uid=123456789</span>
+                            <span class="path">/region?uid=123456789&amp;region_group=GLOBAL</span>
                         </div>
                         <div class="endpoint-body">
                             <p style="margin-bottom: 15px; color: var(--text-muted);">Quickly check the server region of
                                 a player.</p>
 
                             <div class="info-row">
-                                <span class="info-label">Parameter</span>
-                                <span class="info-value">uid (required)</span>
+                                <span class="info-label">Parameters</span>
+                                <span class="info-value">uid (required), region_group (optional: GLOBAL | IND | Other), region (optional)</span>
                             </div>
 
                             <div style="margin-top: 15px;">
@@ -251,7 +251,7 @@
         <!-- Footer -->
         <footer class="main-footer">
             <p>
-                &copy; 2025 TSun Info. All rights reserved.
+                &copy; {{ current_year }} TSun Info. All rights reserved.
                 <a href="https://t.me/saeedxdie" target="_blank" class="footer-link">Telegram</a>
                 <a href="https://github.com/TSun-FreeFire" target="_blank" class="footer-link">GitHub</a>
             </p>

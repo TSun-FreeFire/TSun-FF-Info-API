@@ -4,12 +4,12 @@ import httpx
 import json
 import os
 from collections import defaultdict
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from apscheduler.schedulers.background import BackgroundScheduler
 from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 from cachetools import TTLCache
-from typing import Tuple
+from typing import Any, Type, Tuple
 from proto import FreeFire_pb2, main_pb2, AccountPersonalShow_pb2
 from google.protobuf import json_format, message
 from google.protobuf.message import Message
@@ -19,7 +19,7 @@ import base64
 # === Settings ===
 MAIN_KEY = base64.b64decode('WWcmdGMlREV1aDYlWmNeOA==')
 MAIN_IV = base64.b64decode('Nm95WkRyMjJFM3ljaGpNJQ==')
-RELEASEVERSION = "OB52"
+RELEASEVERSION = os.getenv("RELEASE_VERSION", "OB53")
 USERAGENT = "Mozilla/5.0 (Linux; Android 15; Pixel 8 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.7499.146 Mobile Safari/537.36"
 SUPPORTED_REGIONS = {"PK", "BR", "US", "SAC", "NA", "SG", "RU", "ID", "TW", "VN", "TH", "ME", "IND", "CIS", "BD", "EU"}
 MAX_RETRIES = 3  # Maximum number of retries for API requests
@@ -78,12 +78,29 @@ scheduler = BackgroundScheduler()
 class RateLimitError(Exception):
     pass
 
+class NonRetryableRequestError(Exception):
+    pass
+
 # === Helper Functions ===
 def get_server_url_for_region_group(region_group: str) -> str:
     """
     Get the server URL based on region group (GLOBAL, IND, Other).
     """
     return REGION_GROUP_ENDPOINTS.get(region_group, REGION_GROUP_ENDPOINTS["GLOBAL"])
+
+def get_regions_for_group(region_group: str) -> list[str]:
+    """
+    Return preferred region order for a region group.
+    """
+    group = (region_group or "").strip()
+    if not group:
+        return list(SUPPORTED_REGIONS)
+
+    ordered = [r for r in SUPPORTED_REGIONS if REGION_TO_GROUP.get(r) == group]
+    if ordered:
+        return ordered
+    return list(SUPPORTED_REGIONS)
+
 def pad(text: bytes) -> bytes:
     padding_length = AES.block_size - (len(text) % AES.block_size)
     return text + bytes([padding_length] * padding_length)
@@ -105,8 +122,8 @@ def format_timestamp_with_timezone(timestamp, region):
         # Convert string to int if needed
         timestamp = int(timestamp)
         
-        # Create datetime from UTC timestamp
-        dt_utc = datetime.utcfromtimestamp(timestamp)
+        # Create timezone-aware UTC datetime from timestamp
+        dt_utc = datetime.fromtimestamp(timestamp, tz=timezone.utc)
         
         # Get timezone offset for region
         hours, minutes = REGION_TIMEZONES.get(region, (0, 0))
@@ -162,7 +179,7 @@ def format_timestamps_in_dict(data_dict, region):
     
     return result
 
-def decode_protobuf(encoded_data: bytes, message_type: message.Message) -> message.Message:
+def decode_protobuf(encoded_data: bytes, message_type: Type[Message]) -> Message:
     instance = message_type()
     instance.ParseFromString(encoded_data)
     return instance
@@ -201,6 +218,8 @@ async def retry_api_request(func, *args, max_retries=MAX_RETRIES, initial_delay=
     for attempt in range(max_retries):
         try:
             return await func(*args, **kwargs)
+        except (RateLimitError, NonRetryableRequestError):
+            raise
         except Exception as e:
             last_exception = e
             if attempt < max_retries - 1:
@@ -208,7 +227,9 @@ async def retry_api_request(func, *args, max_retries=MAX_RETRIES, initial_delay=
                 delay = (initial_delay * (2 ** attempt)) + (random.random() * 2)
                 print(f"API request failed (attempt {attempt + 1}/{max_retries}). Retrying in {delay:.2f} seconds... Error: {repr(e)}", flush=True)
                 await asyncio.sleep(delay)
-    raise last_exception
+    if last_exception is not None:
+        raise last_exception
+    raise RuntimeError("retry_api_request failed without capturing an exception")
 
 # === Token Generation ===
 async def get_access_token(account: str):
@@ -218,7 +239,7 @@ async def get_access_token(account: str):
     
     async def fetch():
         async with httpx.AsyncClient(verify=False, timeout=60.0) as client:
-            resp = await client.post(url, data=payload, headers=headers)
+            resp = await client.post(url, content=payload, headers=headers)
             data = resp.json()
             access_token = data.get("access_token", "0")
             open_id = data.get("open_id", "0")
@@ -305,9 +326,10 @@ async def get_token_info(region: str) -> Tuple[str, str, str]:
         print(f"Error getting token info for region {region}: {repr(e)}", flush=True)
         raise
 
-async def GetAccountInformation(uid, unk, region, endpoint, custom_server_url=None):
+async def GetAccountInformation(uid, unk, region, endpoint, custom_server_url=None, request_retries=MAX_RETRIES):
     try:
-        payload = await json_to_proto(json.dumps({'a': uid, 'b': unk}), main_pb2.GetPlayerPersonalShow())
+        get_player_personal_show_cls = getattr(main_pb2, "GetPlayerPersonalShow")
+        payload = await json_to_proto(json.dumps({'a': uid, 'b': unk}), get_player_personal_show_cls())
         data_enc = aes_cbc_encrypt(MAIN_KEY, MAIN_IV, payload)
         token, lock, server = await get_token_info(region)
         
@@ -327,7 +349,7 @@ async def GetAccountInformation(uid, unk, region, endpoint, custom_server_url=No
         async def make_request():
             try:
                 async with httpx.AsyncClient(verify=False, timeout=60.0) as client:
-                    resp = await client.post(server + endpoint, data=data_enc, headers=headers, timeout=30.0)
+                    resp = await client.post(server + endpoint, content=data_enc, headers=headers, timeout=30.0)
 
                     if resp.status_code == 429:  # Rate limited
                         import random
@@ -338,13 +360,19 @@ async def GetAccountInformation(uid, unk, region, endpoint, custom_server_url=No
                         await asyncio.sleep(wait_time)
                         raise RateLimitError(f"Rate limited for UID {uid}")
 
+                    if resp.status_code in (400, 401, 403, 404):
+                        error_msg = f"API Error: {resp.status_code} | Content: {resp.content[:200]}"
+                        print(error_msg, flush=True)
+                        raise NonRetryableRequestError(error_msg)
+
                     if resp.status_code != 200:
                         error_msg = f"API Error: {resp.status_code} | Content: {resp.content[:200]}"
                         print(error_msg, flush=True)
                         raise Exception(error_msg)
 
                     try:
-                        return json.loads(json_format.MessageToJson(decode_protobuf(resp.content, AccountPersonalShow_pb2.AccountPersonalShowInfo)))
+                        account_personal_show_info_cls = getattr(AccountPersonalShow_pb2, "AccountPersonalShowInfo")
+                        return json.loads(json_format.MessageToJson(decode_protobuf(resp.content, account_personal_show_info_cls)))
                     except Exception as e:
                         error_msg = f"Protobuf Decode Error for UID {uid}: {e} | Status: {resp.status_code} | Content (Hex): {resp.content.hex()[:100]}"
                         print(error_msg, flush=True)
@@ -357,7 +385,7 @@ async def GetAccountInformation(uid, unk, region, endpoint, custom_server_url=No
                 # Ensure resources are cleaned up
                 pass
 
-        return await retry_api_request(make_request)
+        return await retry_api_request(make_request, max_retries=request_retries)
     except Exception as e:
         error_msg = f"Error getting account information for UID {uid}: {e}"
         print(error_msg, flush=True)
@@ -434,8 +462,6 @@ async def get_account_info():
     # Get region group parameter (GLOBAL, IND, Other)
     region_group = request.args.get('region_group', '').strip()
     custom_server_url = None
-    if region_group:
-        custom_server_url = get_server_url_for_region_group(region_group)
     
     cache_key = f"get_{uid}_{region}_{region_group}"
     cached_res = cache.get(cache_key)
@@ -445,6 +471,8 @@ async def get_account_info():
     if rate_limit_cache.get(uid):
         return jsonify({"error": "Rate limited. Please try again later."}), 429
 
+    return_data: dict[str, Any] | None = None
+
     try:
         # Check UID region cache
         if not region_param:
@@ -453,21 +481,28 @@ async def get_account_info():
                 region = cached_region
 
         # Try primary region
-        return_data = await GetAccountInformation(uid, "7", region, "/GetPlayerPersonalShow", custom_server_url)
+        primary_retries = MAX_RETRIES if region_param else 1
+        return_data = await GetAccountInformation(uid, "7", region, "/GetPlayerPersonalShow", custom_server_url, request_retries=primary_retries)
     except RateLimitError as e:
         return jsonify({"error": str(e)}), 429
     except Exception:
         # If failed and no region specified, try auto-detection
         if not region_param:
             found = False
-            # Prioritize common regions
-            for r in ["IND", "BR", "US", "SAC", "NA", "SG", "ID", "VN", "TH", "ME", "RU", "EU", "BD"]:
+            preferred_regions = get_regions_for_group(region_group)
+            # Prioritize cached-friendly/common regions while respecting selected group
+            common_priority = ["PK", "IND", "BD", "ME", "SG", "ID", "VN", "TH", "EU", "RU", "BR", "US", "SAC", "NA"]
+            ordered_regions = [r for r in common_priority if r in preferred_regions]
+            ordered_regions.extend([r for r in preferred_regions if r not in ordered_regions])
+
+            for r in ordered_regions:
                 if r == region: continue
                 try:
                     # Use fewer retries for auto-detection to avoid triggering more rate limits
                     return_data = await retry_api_request(
                         GetAccountInformation, uid, "7", r, "/GetPlayerPersonalShow", custom_server_url,
-                        max_retries=1 
+                        request_retries=1,
+                        max_retries=1
                     )
                     found = True
                     region = r # Update region for response
@@ -486,6 +521,8 @@ async def get_account_info():
             return jsonify({"error": f"Account not found in region {region}."}), 404
 
     try:
+        if return_data is None:
+            return jsonify({"error": "Account data unavailable."}), 500
         formatted = format_response(return_data)
         if "AccountRegion" not in formatted["AccountInfo"] or not formatted["AccountInfo"]["AccountRegion"]:
              formatted["AccountInfo"]["AccountRegion"] = region
@@ -513,8 +550,6 @@ async def get_region_info():
     # Get region group parameter (GLOBAL, IND, Other)
     region_group = request.args.get('region_group', '').strip()
     custom_server_url = None
-    if region_group:
-        custom_server_url = get_server_url_for_region_group(region_group)
 
     cache_key = f"region_{uid}_{region_group}"
     cached_res = cache.get(cache_key)
@@ -526,7 +561,8 @@ async def get_region_info():
         cached_region = uid_region_cache.get(uid)
         region = cached_region or request.args.get('region', 'PK').upper()
 
-        return_data = await GetAccountInformation(uid, "7", region, "/GetPlayerPersonalShow", custom_server_url)
+        request_retries = MAX_RETRIES if request.args.get('region') else 1
+        return_data = await GetAccountInformation(uid, "7", region, "/GetPlayerPersonalShow", custom_server_url, request_retries=request_retries)
 
         if return_data and return_data.get("basicInfo", {}).get("region"):
             res = {
@@ -552,7 +588,11 @@ def serve_flag(filename):
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    return render_template(
+        'index.html',
+        release_version=RELEASEVERSION,
+        current_year=datetime.now(timezone.utc).year
+    )
 
 # === Startup ===
 async def startup():
