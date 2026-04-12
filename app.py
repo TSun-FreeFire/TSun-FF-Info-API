@@ -9,7 +9,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 from cachetools import TTLCache
-from typing import Tuple
+from typing import Any, Type, Tuple
 from proto import FreeFire_pb2, main_pb2, AccountPersonalShow_pb2
 from google.protobuf import json_format, message
 from google.protobuf.message import Message
@@ -19,7 +19,7 @@ import base64
 # === Settings ===
 MAIN_KEY = base64.b64decode('WWcmdGMlREV1aDYlWmNeOA==')
 MAIN_IV = base64.b64decode('Nm95WkRyMjJFM3ljaGpNJQ==')
-RELEASEVERSION = "OB52"
+RELEASEVERSION = os.getenv("RELEASE_VERSION", "OB53")
 USERAGENT = "Mozilla/5.0 (Linux; Android 15; Pixel 8 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.7499.146 Mobile Safari/537.36"
 SUPPORTED_REGIONS = {"PK"}
 MAX_RETRIES = 3  # Maximum number of retries for API requests
@@ -138,7 +138,7 @@ def format_timestamps_in_dict(data_dict, region):
     
     return result
 
-def decode_protobuf(encoded_data: bytes, message_type: message.Message) -> message.Message:
+def decode_protobuf(encoded_data: bytes, message_type: Type[Message]) -> Message:
     instance = message_type()
     instance.ParseFromString(encoded_data)
     return instance
@@ -172,7 +172,9 @@ async def retry_api_request(func, *args, max_retries=MAX_RETRIES, initial_delay=
                 delay = (initial_delay * (2 ** attempt)) + (random.random() * 2)
                 print(f"API request failed (attempt {attempt + 1}/{max_retries}). Retrying in {delay:.2f} seconds... Error: {repr(e)}", flush=True)
                 await asyncio.sleep(delay)
-    raise last_exception
+    if last_exception is not None:
+        raise last_exception
+    raise RuntimeError("retry_api_request failed without capturing an exception")
 
 # === Token Generation ===
 async def get_access_token(account: str):
@@ -182,7 +184,7 @@ async def get_access_token(account: str):
     
     async def fetch():
         async with httpx.AsyncClient(verify=False, timeout=60.0) as client:
-            resp = await client.post(url, data=payload, headers=headers)
+            resp = await client.post(url, content=payload, headers=headers)
             data = resp.json()
             access_token = data.get("access_token", "0")
             open_id = data.get("open_id", "0")
@@ -271,7 +273,8 @@ async def get_token_info(region: str) -> Tuple[str, str, str]:
 
 async def GetAccountInformation(uid, unk, region, endpoint, custom_server_url=None):
     try:
-        payload = await json_to_proto(json.dumps({'a': uid, 'b': unk}), main_pb2.GetPlayerPersonalShow())
+        get_player_personal_show_cls = getattr(main_pb2, "GetPlayerPersonalShow")
+        payload = await json_to_proto(json.dumps({'a': uid, 'b': unk}), get_player_personal_show_cls())
         data_enc = aes_cbc_encrypt(MAIN_KEY, MAIN_IV, payload)
         token, lock, server = await get_token_info(region)
         
@@ -291,7 +294,7 @@ async def GetAccountInformation(uid, unk, region, endpoint, custom_server_url=No
         async def make_request():
             try:
                 async with httpx.AsyncClient(verify=False, timeout=60.0) as client:
-                    resp = await client.post(server + endpoint, data=data_enc, headers=headers, timeout=30.0)
+                    resp = await client.post(server + endpoint, content=data_enc, headers=headers, timeout=30.0)
 
                     if resp.status_code == 429:  # Rate limited
                         import random
@@ -308,7 +311,8 @@ async def GetAccountInformation(uid, unk, region, endpoint, custom_server_url=No
                         raise Exception(error_msg)
 
                     try:
-                        return json.loads(json_format.MessageToJson(decode_protobuf(resp.content, AccountPersonalShow_pb2.AccountPersonalShowInfo)))
+                        account_personal_show_info_cls = getattr(AccountPersonalShow_pb2, "AccountPersonalShowInfo")
+                        return json.loads(json_format.MessageToJson(decode_protobuf(resp.content, account_personal_show_info_cls)))
                     except Exception as e:
                         error_msg = f"Protobuf Decode Error for UID {uid}: {e} | Status: {resp.status_code} | Content (Hex): {resp.content.hex()[:100]}"
                         print(error_msg, flush=True)
@@ -409,6 +413,8 @@ async def get_account_info():
     if rate_limit_cache.get(uid):
         return jsonify({"error": "Rate limited. Please try again later."}), 429
 
+    return_data: dict[str, Any] | None = None
+
     try:
         # Check UID region cache
         if not region_param:
@@ -450,6 +456,8 @@ async def get_account_info():
             return jsonify({"error": f"Account not found in region {region}."}), 404
 
     try:
+        if return_data is None:
+            return jsonify({"error": "Account data unavailable."}), 500
         formatted = format_response(return_data)
         if "AccountRegion" not in formatted["AccountInfo"] or not formatted["AccountInfo"]["AccountRegion"]:
              formatted["AccountInfo"]["AccountRegion"] = region
@@ -516,7 +524,10 @@ def serve_flag(filename):
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    return render_template(
+        'index.html',
+        release_version=RELEASEVERSION
+    )
 
 # === Startup ===
 async def startup():
