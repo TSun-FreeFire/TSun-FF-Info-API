@@ -32,7 +32,7 @@ REGION_TIMEZONES = {
 
 # Region group to endpoint mapping
 REGION_GROUP_ENDPOINTS = {
-    "PK": "https://clientbp.ggblueshark.com"
+    "PK": "https://clientbp.ggpolarbear.com"
 }
 
 # Mapping of regions to region groups
