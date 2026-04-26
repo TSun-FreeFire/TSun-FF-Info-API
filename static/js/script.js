@@ -76,7 +76,7 @@ async function handleAccountSearch(e) {
     e.preventDefault();
     const uidInput = document.getElementById('uid');
     const uid = uidInput.value.trim();
-    const regionGroup = document.getElementById('regionGroup').value;
+    const regionGroup = 'PK';
 
     if (!uid) return;
 
@@ -114,7 +114,7 @@ async function handleRegionCheck(e) {
     e.preventDefault();
     const uidInput = document.getElementById('regionUid');
     const uid = uidInput.value.trim();
-    const regionGroup = document.getElementById('regionCheckRegionGroup').value;
+    const regionGroup = 'PK';
 
     if (!uid) return;
 
@@ -149,7 +149,7 @@ async function handleFullResponse(e) {
     e.preventDefault();
     const uidInput = document.getElementById('fullResponseUid');
     const uid = uidInput.value.trim();
-    const regionGroup = document.getElementById('fullResponseRegionGroup').value;
+    const regionGroup = 'PK';
 
     if (!uid) return;
 

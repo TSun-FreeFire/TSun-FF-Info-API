@@ -245,6 +245,12 @@ a:hover {
     font-size: 1.1rem;
 }
 
+.support-subtitle {
+    margin-top: calc(var(--space-md) * -0.75);
+    margin-bottom: var(--space-md);
+    font-size: 1rem;
+}
+
 .input-group {
     position: relative;
     display: flex;
