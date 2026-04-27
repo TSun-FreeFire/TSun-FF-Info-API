@@ -1,4 +1,5 @@
 import asyncio
+import importlib.util
 import logging
 import time
 import httpx
@@ -6,18 +7,35 @@ import json
 import os
 import socket
 import sys
+import threading
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 from apscheduler.schedulers.background import BackgroundScheduler
 from flask import Flask, request, jsonify, render_template, g
 from flask_cors import CORS
 from cachetools import TTLCache
 from typing import Any, Type, Tuple
-from proto import FreeFire_pb2, main_pb2, AccountPersonalShow_pb2
 from google.protobuf import json_format, message
 from google.protobuf.message import Message
 from Crypto.Cipher import AES
 import base64
+
+BASE_DIR = Path(__file__).resolve().parent
+PROTO_DIR = BASE_DIR / "proto"
+
+def load_local_proto_module(module_name: str):
+    module_path = PROTO_DIR / f"{module_name}.py"
+    spec = importlib.util.spec_from_file_location(f"tsun_local_{module_name}", module_path)
+    if spec is None or spec.loader is None:
+        raise ImportError(f"Unable to load local proto module: {module_path}")
+
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+main_pb2 = load_local_proto_module("main_pb2")
+AccountPersonalShow_pb2 = load_local_proto_module("AccountPersonalShow_pb2")
 
 # === Settings ===
 MAIN_KEY = base64.b64decode('WWcmdGMlREV1aDYlWmNeOA==')
@@ -75,6 +93,21 @@ TOKEN_REGION_GROUPS = {
 }
 GROUP_FALLBACK_ORDER = ("GLOBAL", "IND", "OTHER")
 TOKEN_REGION_ORDER = ("BD", "ME", "PK", "IND", "US", "BR", "NA")
+TOKEN_REGIONS_FROM_GROUPS = {
+    region
+    for grouped_regions in TOKEN_REGION_GROUPS.values()
+    for region in grouped_regions
+}
+if len(TOKEN_REGION_ORDER) != len(set(TOKEN_REGION_ORDER)):
+    raise RuntimeError(
+        f"TOKEN_REGION_ORDER contains duplicate entries: {TOKEN_REGION_ORDER}"
+    )
+if TOKEN_REGIONS_FROM_GROUPS != set(TOKEN_REGION_ORDER):
+    raise RuntimeError(
+        "Token region configuration mismatch: "
+        f"TOKEN_REGION_GROUPS={sorted(TOKEN_REGIONS_FROM_GROUPS)} "
+        f"TOKEN_REGION_ORDER={sorted(set(TOKEN_REGION_ORDER))}"
+    )
 TOKEN_REGIONS = set(TOKEN_REGION_ORDER)
 
 # === Flask App Setup ===
@@ -87,6 +120,8 @@ cached_tokens = defaultdict(dict)
 creds_cache = {} # creds -> info
 region_locks = defaultdict(asyncio.Lock) # Used for creds locking
 scheduler = BackgroundScheduler()
+startup_lock = threading.Lock()
+startup_completed = False
 
 class RateLimitError(Exception):
     pass
@@ -242,7 +277,7 @@ def get_group_fallback_chain(region_group: str | None = None) -> list[str]:
         return list(GROUP_FALLBACK_ORDER)
 
     ordered_groups = [selected_group]
-    for group in ("IND", "OTHER", "GLOBAL"):
+    for group in GROUP_FALLBACK_ORDER:
         if group not in ordered_groups:
             ordered_groups.append(group)
     return ordered_groups
@@ -625,7 +660,7 @@ async def GetAccountInformation(uid, unk, region, endpoint, custom_server_url=No
             except NonRetryableRequestError:
                 raise
             except Exception as e:
-                raise Exception(f"Request failed for UID {uid}: {e}")
+                raise Exception(f"Request failed for UID {uid}: {e}") from e
             finally:
                 # Ensure resources are cleaned up
                 pass
@@ -636,7 +671,7 @@ async def GetAccountInformation(uid, unk, region, endpoint, custom_server_url=No
     except NonRetryableRequestError:
         raise
     except Exception as e:
-        raise Exception(f"Error getting account information for UID {uid}: {e}")
+        raise Exception(f"Error getting account information for UID {uid}: {e}") from e
 
 def format_response(data):
     try:
@@ -774,7 +809,8 @@ async def get_account_info():
             return jsonify({"error": "Account data unavailable."}), 500
 
         rate_limit_cache.pop(uid, None)
-        actual_region = (return_data.get("basicInfo", {}) or {}).get("region")
+        basic_info = return_data.get("basicInfo")
+        actual_region = basic_info.get("region") if basic_info else None
         if actual_region:
             uid_region_cache[uid] = actual_region
         if region_group and resolved_group != region_group:
@@ -869,18 +905,50 @@ def index():
 # === Startup ===
 async def startup():
     await initialize_tokens()
-    # Schedule token refresh every 7 hours (25200 seconds)
-    scheduler.add_job(refresh_tokens_job, 'interval', seconds=25200, id='token_refresh')
-    scheduler.start()
+    if scheduler.get_job('token_refresh') is None:
+        # Schedule token refresh every 7 hours (25200 seconds)
+        scheduler.add_job(refresh_tokens_job, 'interval', seconds=25200, id='token_refresh')
+    if not scheduler.running:
+        scheduler.start()
     soft_log("SUCCESS", "startup", "token pools ready", release=RELEASEVERSION, pools="GLOBAL, IND, OTHER", tokens=len(TOKEN_REGION_ORDER))
     soft_log("INFO", "scheduler", "refresh loop armed", interval="25200s")
 
+def ensure_startup() -> None:
+    global startup_completed
+
+    if startup_completed:
+        return
+
+    with startup_lock:
+        if startup_completed:
+            return
+
+        loop = asyncio.new_event_loop()
+        try:
+            asyncio.set_event_loop(loop)
+            loop.run_until_complete(startup())
+            startup_completed = True
+        finally:
+            asyncio.set_event_loop(None)
+            loop.close()
+
+def should_run_dev_server() -> bool:
+    app_env = os.getenv("APP_ENV", os.getenv("FLASK_ENV", "development")).strip().lower()
+    return app_env != "production"
+
 if __name__ == '__main__':
-    configure_console_output()
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    loop.run_until_complete(startup())
     port = int(os.environ.get("PORT", 5000))
+    ensure_startup()
+
+    if not should_run_dev_server():
+        soft_log(
+            "WARN",
+            "serve.mode",
+            "development server disabled",
+            hint='Use gunicorn "wsgi:app" --bind 0.0.0.0:$PORT',
+        )
+        raise SystemExit(1)
+
     for server_url in get_server_urls(port):
         soft_log("INFO", "listen", "server available", url=server_url)
     app.run(host='0.0.0.0', port=port)

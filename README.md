@@ -99,10 +99,24 @@ cd TSun-FF-Info-API
 pip install -r requirements.txt
 ```
 
-### 3️⃣ Run the Server
+### 3️⃣ Run the Local Dev Server
 
 ```bash
 python app.py
+```
+
+### 4️⃣ Run in Production
+
+Use a production WSGI server instead of Flask's development server.
+
+Linux/macOS:
+```bash
+gunicorn "wsgi:app" --bind 0.0.0.0:${PORT:-5000}
+```
+
+Windows:
+```bash
+waitress-serve --listen=0.0.0.0:5000 wsgi:app
 ```
 
 ---

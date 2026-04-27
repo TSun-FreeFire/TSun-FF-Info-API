@@ -1,11 +1,5 @@
-from app import app
+from app import app, ensure_startup
 
-if __name__ == '__main__':
-    app.run(debug=True)
-    
-    #THIS CODE CREATE BY @Saeedxdie
-#THIS CODE CREATE BY @Saeedxdie
-#THIS CODE CREATE BY @Saeedxdie
-#THIS CODE CREATE BY @Saeedxdie
-#THIS CODE CREATE BY @Saeedxdie
-#THIS CODE CREATE BY @Saeedxdie
+ensure_startup()
+
+application = app
