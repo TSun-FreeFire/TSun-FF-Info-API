@@ -50,7 +50,7 @@ REGION_TIMEZONES = {
 
 # Region group to endpoint mapping
 REGION_GROUP_ENDPOINTS = {
-    "GLOBAL": "https://clientbp.ggblueshark.com",  # EU, ME, ID, TH, VN, SG, BD, PK, MY, PH, RU, AFR
+    "GLOBAL": "https://clientbp.ggpolarbear.com",  # EU, ME, ID, TH, VN, SG, BD, PK, MY, PH, RU, AFR
     "IND": "https://client.ind.freefiremobile.com",  # IND
     "Other": "https://client.us.freefiremobile.com"  # BR, US, SAC, NA
 }
