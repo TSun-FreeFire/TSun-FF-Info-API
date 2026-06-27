@@ -937,7 +937,7 @@ def should_run_dev_server() -> bool:
     return app_env != "production"
 
 if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 5000))
+    port = int(os.environ.get("PORT", 8075))
     ensure_startup()
 
     if not should_run_dev_server():
