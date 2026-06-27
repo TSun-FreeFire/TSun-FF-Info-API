@@ -40,7 +40,29 @@ AccountPersonalShow_pb2 = load_local_proto_module("AccountPersonalShow_pb2")
 # === Settings ===
 MAIN_KEY = base64.b64decode('WWcmdGMlREV1aDYlWmNeOA==')
 MAIN_IV = base64.b64decode('Nm95WkRyMjJFM3ljaGpNJQ==')
-RELEASEVERSION = os.getenv("RELEASE_VERSION", "OB54")
+# Values below (release version + client endpoints) are read from the remote
+# config gist on every request via the helpers defined further down. The fetch
+# is cached briefly (see CONFIG_TTL) so requests don't each hit the network.
+CONFIG_URL = "https://gist.githubusercontent.com/SaeedX302/b8277fdd6a2e71b599a39299f3ab3545/raw/config.json"
+CONFIG_TTL = 60  # seconds to cache the fetched gist before re-fetching
+
+# Maps the internal region-group names to the keys used in config.json -> client_url
+CONFIG_CLIENT_URL_KEYS = {
+    "GLOBAL": "global",
+    "IND": "ind",
+    "OTHER": "us",
+}
+
+# Fallback used only when config.json is missing or malformed
+_DEFAULT_CONFIG = {
+    "client_url": {
+        "global": "https://clientbp.ggpolarbear.com/",
+        "ind": "https://client.ind.freefiremobile.com/",
+        "us": "https://client.us.freefiremobile.com/",
+    },
+    "RELEASEVERSION": os.getenv("RELEASE_VERSION", "OB54"),
+}
+
 USERAGENT = "Mozilla/5.0 (Linux; Android 15; Pixel 8 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.7499.146 Mobile Safari/537.36"
 SUPPORTED_REGIONS = {"PK", "BR", "US", "SAC", "NA", "SG", "RU", "ID", "TW", "VN", "TH", "ME", "IND", "CIS", "BD", "EU"}
 MAX_RETRIES = 3  # Maximum number of retries for API requests
@@ -69,12 +91,9 @@ REGION_TIMEZONES = {
     "TW": (8, 0),     # UTC+8
 }
 
-# Region group to endpoint mapping
-REGION_GROUP_ENDPOINTS = {
-    "GLOBAL": "https://clientbp.ggpolarbear.com",  # EU, ME, ID, TH, VN, SG, BD, PK, MY, PH, RU, AFR
-    "IND": "https://client.ind.freefiremobile.com",  # IND
-    "OTHER": "https://client.us.freefiremobile.com"  # BR, US, SAC, NA
-}
+# Region group names (GLOBAL, IND, OTHER). The actual endpoint URLs are loaded
+# from config.json per request via get_region_group_endpoints().
+REGION_GROUPS = tuple(CONFIG_CLIENT_URL_KEYS.keys())
 
 # Mapping of regions to region groups
 REGION_TO_GROUP = {
@@ -224,15 +243,58 @@ def configure_console_output() -> None:
 
 configure_console_output()
 
+_config_cache = TTLCache(maxsize=1, ttl=CONFIG_TTL)  # cached gist fetch
+_last_good_config = {}  # last successfully fetched config, used on fetch failure
+
+def load_config() -> dict:
+    """
+    Fetch the config from the remote gist. Called on every request, but the
+    fetched value is cached for CONFIG_TTL seconds so edits to the gist apply
+    within ~a minute without each request hitting the network. On fetch/parse
+    failure it falls back to the last good fetch, then to built-in defaults.
+    """
+    global _last_good_config
+    cached = _config_cache.get("config")
+    if cached is not None:
+        return cached
+    try:
+        resp = httpx.get(CONFIG_URL, timeout=10.0)
+        resp.raise_for_status()
+        config = resp.json()
+        _config_cache["config"] = config
+        _last_good_config = config
+        return config
+    except Exception as e:
+        soft_log("WARN", "config", "gist fetch failed, using fallback", reason=get_exception_message(e))
+        return _last_good_config or _DEFAULT_CONFIG
+
+def get_release_version() -> str:
+    """Current release version, read from config.json (RELEASEVERSION)."""
+    return load_config().get("RELEASEVERSION") or _DEFAULT_CONFIG["RELEASEVERSION"]
+
+def get_region_group_endpoints() -> dict:
+    """
+    Build the {GLOBAL/IND/OTHER -> client URL} mapping from config.json's
+    client_url block. Trailing slashes are stripped so URLs concatenate cleanly
+    with request endpoints (e.g. server + "/GetPlayerPersonalShow").
+    """
+    client_url = load_config().get("client_url") or {}
+    endpoints = {}
+    for group, key in CONFIG_CLIENT_URL_KEYS.items():
+        url = client_url.get(key) or _DEFAULT_CONFIG["client_url"][key]
+        endpoints[group] = url.rstrip("/")
+    return endpoints
+
 def get_server_url_for_region_group(region_group: str | None) -> str:
     """
     Get the server URL based on region group (GLOBAL, IND, Other).
     """
-    return REGION_GROUP_ENDPOINTS.get(normalize_region_group(region_group), REGION_GROUP_ENDPOINTS["GLOBAL"])
+    endpoints = get_region_group_endpoints()
+    return endpoints.get(normalize_region_group(region_group), endpoints["GLOBAL"])
 
 def normalize_region_group(region_group: str | None) -> str:
     group = (region_group or "").strip().upper()
-    if group in REGION_GROUP_ENDPOINTS:
+    if group in REGION_GROUPS:
         return group
     return ""
 
@@ -624,7 +686,7 @@ async def GetAccountInformation(uid, unk, region, endpoint, custom_server_url=No
             'User-Agent': USERAGENT, 'Connection': "Keep-Alive", 'Accept-Encoding': "gzip",
             'Content-Type': "application/octet-stream", 'Expect': "100-continue",
             'Authorization': token, 'X-Unity-Version': "2018.4.11f1", 'X-GA': "v1 1",
-            'ReleaseVersion': RELEASEVERSION
+            'ReleaseVersion': get_release_version()
         }
 
         async def make_request():
@@ -898,7 +960,7 @@ def serve_flag(filename):
 def index():
     return render_template(
         'index.html',
-        release_version=RELEASEVERSION,
+        release_version=get_release_version(),
         current_year=datetime.now(timezone.utc).year
     )
 
@@ -910,7 +972,7 @@ async def startup():
         scheduler.add_job(refresh_tokens_job, 'interval', seconds=25200, id='token_refresh')
     if not scheduler.running:
         scheduler.start()
-    soft_log("SUCCESS", "startup", "token pools ready", release=RELEASEVERSION, pools="GLOBAL, IND, OTHER", tokens=len(TOKEN_REGION_ORDER))
+    soft_log("SUCCESS", "startup", "token pools ready", release=get_release_version(), pools="GLOBAL, IND, OTHER", tokens=len(TOKEN_REGION_ORDER))
     soft_log("INFO", "scheduler", "refresh loop armed", interval="25200s")
 
 def ensure_startup() -> None:
