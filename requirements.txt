@@ -1,5 +1,5 @@
-Flask==3.0.2
-Flask-Cors==4.0.0
+Flask[async]==3.0.2
+Flask-CORS==4.0.0
 protobuf==6.30.0
 pycryptodome==3.20.0
 httpx==0.27.0
@@ -10,5 +10,3 @@ waitress
 requests
 apscheduler
 Pillow
-google
-flask[async]

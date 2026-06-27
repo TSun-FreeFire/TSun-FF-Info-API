@@ -40,7 +40,7 @@ AccountPersonalShow_pb2 = load_local_proto_module("AccountPersonalShow_pb2")
 # === Settings ===
 MAIN_KEY = base64.b64decode('WWcmdGMlREV1aDYlWmNeOA==')
 MAIN_IV = base64.b64decode('Nm95WkRyMjJFM3ljaGpNJQ==')
-RELEASEVERSION = os.getenv("RELEASE_VERSION", "OB53")
+RELEASEVERSION = os.getenv("RELEASE_VERSION", "OB54")
 USERAGENT = "Mozilla/5.0 (Linux; Android 15; Pixel 8 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.7499.146 Mobile Safari/537.36"
 SUPPORTED_REGIONS = {"PK", "BR", "US", "SAC", "NA", "SG", "RU", "ID", "TW", "VN", "TH", "ME", "IND", "CIS", "BD", "EU"}
 MAX_RETRIES = 3  # Maximum number of retries for API requests

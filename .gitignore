@@ -2,3 +2,4 @@ firebase-debug.log
 .claude/agents/kfc/spec-design.md
 /.claude
 .kilo/
+__pycache__/
