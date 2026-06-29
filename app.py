@@ -53,15 +53,7 @@ CONFIG_CLIENT_URL_KEYS = {
     "OTHER": "us",
 }
 
-# Fallback used only when config.json is missing or malformed
-_DEFAULT_CONFIG = {
-    "client_url": {
-        "global": "https://clientbp.ggpolarbear.com/",
-        "ind": "https://client.ind.freefiremobile.com/",
-        "us": "https://client.us.freefiremobile.com/",
-    },
-    "RELEASEVERSION": os.getenv("RELEASE_VERSION", "OB54"),
-}
+
 
 USERAGENT = "Mozilla/5.0 (Linux; Android 15; Pixel 8 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.7499.146 Mobile Safari/537.36"
 SUPPORTED_REGIONS = {"PK", "BR", "US", "SAC", "NA", "SG", "RU", "ID", "TW", "VN", "TH", "ME", "IND", "CIS", "BD", "EU"}
@@ -243,17 +235,14 @@ def configure_console_output() -> None:
 
 configure_console_output()
 
-_config_cache = TTLCache(maxsize=1, ttl=CONFIG_TTL)  # cached gist fetch
-_last_good_config = {}  # last successfully fetched config, used on fetch failure
+_config_cache = TTLCache(maxsize=1, ttl=CONFIG_TTL)
 
 def load_config() -> dict:
     """
     Fetch the config from the remote gist. Called on every request, but the
     fetched value is cached for CONFIG_TTL seconds so edits to the gist apply
-    within ~a minute without each request hitting the network. On fetch/parse
-    failure it falls back to the last good fetch, then to built-in defaults.
+    within ~a minute without each request hitting the network.
     """
-    global _last_good_config
     cached = _config_cache.get("config")
     if cached is not None:
         return cached
@@ -262,15 +251,14 @@ def load_config() -> dict:
         resp.raise_for_status()
         config = resp.json()
         _config_cache["config"] = config
-        _last_good_config = config
         return config
     except Exception as e:
-        soft_log("WARN", "config", "gist fetch failed, using fallback", reason=get_exception_message(e))
-        return _last_good_config or _DEFAULT_CONFIG
+        soft_log("WARN", "config", "gist fetch failed", reason=get_exception_message(e))
+        raise
 
 def get_release_version() -> str:
     """Current release version, read from config.json (RELEASEVERSION)."""
-    return load_config().get("RELEASEVERSION") or _DEFAULT_CONFIG["RELEASEVERSION"]
+    return load_config().get("RELEASEVERSION")
 
 def get_region_group_endpoints() -> dict:
     """
@@ -281,7 +269,9 @@ def get_region_group_endpoints() -> dict:
     client_url = load_config().get("client_url") or {}
     endpoints = {}
     for group, key in CONFIG_CLIENT_URL_KEYS.items():
-        url = client_url.get(key) or _DEFAULT_CONFIG["client_url"][key]
+        url = client_url.get(key)
+        if not url:
+            raise KeyError(f"Missing client_url.{key} in config")
         endpoints[group] = url.rstrip("/")
     return endpoints
 
