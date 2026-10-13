@@ -1,5 +1,5 @@
 
-<h1 align="center">🔥 FreeFire Info API (OB53) 🔥</h1>
+<h1 align="center">🔥 FreeFire Info API (OB55) 🔥</h1>
 
 <p align="center">
   <b>A lightweight, fast & secure API for fetching Free Fire player profiles</b><br>
@@ -18,7 +18,7 @@
 
 ## ⚡ Overview
 
-This project exposes a **Free Fire Player Info API (OB53-ready)** that:
+This project exposes a **Free Fire Player Info API (OB55-ready)** that:
 - Retrieves player profiles by UID  
 - Handles token refresh automatically  
 - Uses **AES-CBC encryption** & **Protobuf serialization**  
