@@ -40,7 +40,7 @@ AccountPersonalShow_pb2 = load_local_proto_module("AccountPersonalShow_pb2")
 # === Settings ===
 MAIN_KEY = base64.b64decode('WWcmdGMlREV1aDYlWmNeOA==')
 MAIN_IV = base64.b64decode('Nm95WkRyMjJFM3ljaGpNJQ==')
-RELEASEVERSION = os.getenv("RELEASE_VERSION", "OB53")
+RELEASEVERSION = os.getenv("RELEASE_VERSION", "OB55")
 USERAGENT = "Mozilla/5.0 (Linux; Android 15; Pixel 8 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.7499.146 Mobile Safari/537.36"
 SUPPORTED_REGIONS = {"PK", "BR", "US", "SAC", "NA", "SG", "RU", "ID", "TW", "VN", "TH", "ME", "IND", "CIS", "BD", "EU"}
 MAX_RETRIES = 3  # Maximum number of retries for API requests
@@ -376,19 +376,19 @@ def get_account_credentials(region: str) -> str:
     elif r == "BD":
         return "uid=4260559999&password=saeedxmotoxkaka_3PJ4Z1XNC3Q"
     elif r == "ME":
-        return "uid=4260531157&password=saeedxmotoxkaka_J7FAA5VUJ1H"
+        return "uid=3231014029&password=79F37904133C1AD52ED425CFE03E628FB4CDA75CB3ED3D4290E51C0F237D1444"
     elif r == "SAC":
-        return "uid=4260531157&password=saeedxmotoxkaka_J7FAA5VUJ1H"
+        return "uid=3231014029&password=79F37904133C1AD52ED425CFE03E628FB4CDA75CB3ED3D4290E51C0F237D1444"
     elif r == "IND":
-        return "uid=4213341828&password=WIND-0GAT2HKEN-X"
+        return "uid=3823576220&password=F6461919DB55B936B3B95EDDFB1373045AF6E6D5A80E9A616A9FF4FCFC09DA7B"
     elif r == "NA":
-        return "uid=4051729572&password=0FE5F51725509983A8369EAACCA1F2B2CCB15F2F027163FC32BFA2AA307C58E3"
+        return "uid=4051729839&password=81C438F1BF48F8265CB8B757B2A37C1415D3B5A838A55B233CA9287C3F42B3E5"
     elif r == "US":
         return "uid=4038272419&password=A82E0644DF741410E73E2AFA5AD1013F96B414A137C9932DF14D72BB87E6A479"
     elif r == "BR":
         return "uid=3767114815&password=585FE46BB609FF12A3D6194890F7B9734157096A325ED25138E385287810C39A"
     else:
-        return "uid=4213341828&password=WIND-0GAT2HKEN-X"
+        return "uid=3823576220&password=F6461919DB55B936B3B95EDDFB1373045AF6E6D5A80E9A616A9FF4FCFC09DA7B"
 
 async def retry_api_request(func, *args, max_retries=MAX_RETRIES, initial_delay=RETRY_DELAY, **kwargs):
     """
@@ -453,7 +453,7 @@ async def create_jwt(region: str):
             uid = parts[0].split('=')[1]
             password = parts[1].split('=')[1]
 
-            url = f"https://jwt.tsunstudio.pw/v1/auth/saeed?uid={uid}&password={password}"
+            url = f"https://jwt.tsunstudio.me/v1/auth/saeed?uid={uid}&password={password}"
 
             async def fetch_jwt():
                 async with httpx.AsyncClient(verify=False, timeout=60.0) as client:
