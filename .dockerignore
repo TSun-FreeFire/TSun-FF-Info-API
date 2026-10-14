@@ -1,0 +1,11 @@
+.git
+__pycache__
+.env
+.env.example
+*.md
+venv
+.claude/
+.gemini/
+vercel.json
+setup-domain-in-vps.sh
+docker-compose.yml

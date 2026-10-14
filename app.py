@@ -69,12 +69,9 @@ REGION_TIMEZONES = {
     "TW": (8, 0),     # UTC+8
 }
 
-# Region group to endpoint mapping
-REGION_GROUP_ENDPOINTS = {
-    "GLOBAL": "https://clientbp.ggpolarbear.com",  # EU, ME, ID, TH, VN, SG, BD, PK, MY, PH, RU, AFR
-    "IND": "https://client.ind.freefiremobile.com",  # IND
-    "OTHER": "https://client.us.freefiremobile.com"  # BR, US, SAC, NA
-}
+# Region group names (GLOBAL, IND, OTHER). The actual endpoint URLs are loaded
+# from config.json per request via get_region_group_endpoints().
+REGION_GROUPS = tuple(CONFIG_CLIENT_URL_KEYS.keys())
 
 # Mapping of regions to region groups
 REGION_TO_GROUP = {
@@ -224,15 +221,56 @@ def configure_console_output() -> None:
 
 configure_console_output()
 
+_config_cache = TTLCache(maxsize=1, ttl=CONFIG_TTL)
+
+def load_config() -> dict:
+    """
+    Fetch the config from the remote gist. Called on every request, but the
+    fetched value is cached for CONFIG_TTL seconds so edits to the gist apply
+    within ~a minute without each request hitting the network.
+    """
+    cached = _config_cache.get("config")
+    if cached is not None:
+        return cached
+    try:
+        resp = httpx.get(CONFIG_URL, timeout=10.0)
+        resp.raise_for_status()
+        config = resp.json()
+        _config_cache["config"] = config
+        return config
+    except Exception as e:
+        soft_log("WARN", "config", "gist fetch failed", reason=get_exception_message(e))
+        raise
+
+def get_release_version() -> str:
+    """Current release version, read from config.json (RELEASEVERSION)."""
+    return load_config().get("RELEASEVERSION")
+
+def get_region_group_endpoints() -> dict:
+    """
+    Build the {GLOBAL/IND/OTHER -> client URL} mapping from config.json's
+    client_url block. Trailing slashes are stripped so URLs concatenate cleanly
+    with request endpoints (e.g. server + "/GetPlayerPersonalShow").
+    """
+    client_url = load_config().get("client_url") or {}
+    endpoints = {}
+    for group, key in CONFIG_CLIENT_URL_KEYS.items():
+        url = client_url.get(key)
+        if not url:
+            raise KeyError(f"Missing client_url.{key} in config")
+        endpoints[group] = url.rstrip("/")
+    return endpoints
+
 def get_server_url_for_region_group(region_group: str | None) -> str:
     """
     Get the server URL based on region group (GLOBAL, IND, Other).
     """
-    return REGION_GROUP_ENDPOINTS.get(normalize_region_group(region_group), REGION_GROUP_ENDPOINTS["GLOBAL"])
+    endpoints = get_region_group_endpoints()
+    return endpoints.get(normalize_region_group(region_group), endpoints["GLOBAL"])
 
 def normalize_region_group(region_group: str | None) -> str:
     group = (region_group or "").strip().upper()
-    if group in REGION_GROUP_ENDPOINTS:
+    if group in REGION_GROUPS:
         return group
     return ""
 
@@ -624,7 +662,7 @@ async def GetAccountInformation(uid, unk, region, endpoint, custom_server_url=No
             'User-Agent': USERAGENT, 'Connection': "Keep-Alive", 'Accept-Encoding': "gzip",
             'Content-Type': "application/octet-stream", 'Expect': "100-continue",
             'Authorization': token, 'X-Unity-Version': "2018.4.11f1", 'X-GA': "v1 1",
-            'ReleaseVersion': RELEASEVERSION
+            'ReleaseVersion': get_release_version()
         }
 
         async def make_request():
@@ -898,7 +936,7 @@ def serve_flag(filename):
 def index():
     return render_template(
         'index.html',
-        release_version=RELEASEVERSION,
+        release_version=get_release_version(),
         current_year=datetime.now(timezone.utc).year
     )
 
@@ -910,7 +948,7 @@ async def startup():
         scheduler.add_job(refresh_tokens_job, 'interval', seconds=25200, id='token_refresh')
     if not scheduler.running:
         scheduler.start()
-    soft_log("SUCCESS", "startup", "token pools ready", release=RELEASEVERSION, pools="GLOBAL, IND, OTHER", tokens=len(TOKEN_REGION_ORDER))
+    soft_log("SUCCESS", "startup", "token pools ready", release=get_release_version(), pools="GLOBAL, IND, OTHER", tokens=len(TOKEN_REGION_ORDER))
     soft_log("INFO", "scheduler", "refresh loop armed", interval="25200s")
 
 def ensure_startup() -> None:
@@ -937,7 +975,7 @@ def should_run_dev_server() -> bool:
     return app_env != "production"
 
 if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 5000))
+    port = int(os.environ.get("PORT", 8075))
     ensure_startup()
 
     if not should_run_dev_server():
